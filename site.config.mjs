@@ -44,7 +44,7 @@ export const SITE = {
  * ni dans le `sameAs` du schema Person. C'est voulu : une adresse approximative
  * invalide tout le bloc, et avec lui le lien entre le nom et l'identite en ligne.
  */
-export const LINKEDIN = '';
+export const LINKEDIN = 'https://www.linkedin.com/in/anaclet-julien-ngassaki-ndza';
 
 /**
  * Code de verification Google Search Console.
