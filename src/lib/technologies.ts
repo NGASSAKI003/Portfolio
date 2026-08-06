@@ -88,6 +88,7 @@ export const PILE: FamilleTechnologie[] = [
       { nom: 'Git', icone: i.siGit!, note: 'Historique propre, branches courtes, messages qui expliquent le pourquoi.' },
       { nom: 'GitHub', icone: i.siGithub!, note: 'Dépôts, revues et déploiement automatique à chaque poussée.' },
       { nom: 'Cloudflare', icone: i.siCloudflare!, note: "Pages pour l'hébergement, R2 pour les médias, sans frais de sortie." },
+      { nom: 'Vercel', icone: i.siVercel!, note: "Déploiement des projets Next.js, avec les aperçus automatiques à chaque branche." },
       { nom: 'Netlify', icone: i.siNetlify!, note: "L'hébergeur de mon ancien portfolio. Je sais aussi d'où je viens." },
     ],
   },

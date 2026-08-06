@@ -131,6 +131,24 @@ JavaScript. Aucun observateur à initialiser, donc aucun scénario où un script
 muet laisse la page vide. Là où la fonctionnalité n'existe pas, le contenu
 s'affiche directement.
 
+**Compatibilité des trois moteurs, vérifiée et non supposée.** Deux corrections
+issues de cet audit méritent d'être connues avant de toucher au CSS.
+
+`overflow-x: hidden` oblige le navigateur à calculer `overflow-y: auto`, ce qui
+transforme l'élément en conteneur de défilement et casse `position: sticky` sous
+WebKit. `html` et `body` utilisent donc `overflow-x: clip`, qui coupe le
+débordement sans créer de conteneur, avec `hidden` en repli pour Safari
+antérieur à la version 16.
+
+L'état de la barre haute est piloté par un script et non par
+`animation-timeline: scroll()`, que Gecko ne livre pas encore. Sans cela, la
+barre serait restée transparente par dessus le contenu chez tous les visiteurs
+Firefox.
+
+Ce qui dégrade proprement, en revanche, reste en CSS : la révélation à la lecture
+et la rotation de la lueur sont enveloppées dans `@supports`, et leur absence
+laisse simplement le contenu affiché et la lueur immobile.
+
 **Contrastes calculés, pas estimés.** Chaque jeton de couleur porte son rapport
 mesuré en commentaire dans `src/styles/global.css`. Les huit pages passent le
 niveau AA dans les deux thèmes, à toutes les largeurs testées.

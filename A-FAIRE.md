@@ -55,14 +55,8 @@ dans les données structurées. C'est voulu.
 
 ### Puis complète ton profil LinkedIn
 
-Trois champs comptent, dans cet ordre :
-
-- **Site web.** Sur ton profil, section **Coordonnées**, ajoute l'adresse de ce
-  portfolio. C'est un lien vers toi depuis un domaine à très forte autorité.
-- **Titre.** Mets `Développeur full stack, web, mobile et IA` plutôt que
-  `Étudiant`. Tu as un produit en production, écris le.
-- **Section Projets.** Ajoute One Zone et Y-MENI Sentinel, avec le lien vers la
-  page correspondante de ce portfolio, pas vers la racine.
+Le profil entier, champ par champ, avec les textes prêts à coller, est dans
+[LINKEDIN.md](LINKEDIN.md). Compte une heure, depuis un ordinateur.
 
 ---
 
