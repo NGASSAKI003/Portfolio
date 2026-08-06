@@ -1,0 +1,83 @@
+---
+import { SITE, SITE_URL, VERIFICATION_GOOGLE, url } from '../lib/site';
+
+interface Props {
+  titre: string;
+  description: string;
+  chemin: string;
+  image?: string;
+  typeOG?: 'website' | 'article' | 'profile';
+  jsonLd?: string;
+  publiee?: string;
+  modifiee?: string;
+}
+
+const {
+  titre,
+  description,
+  chemin,
+  image = '/og/defaut.png',
+  typeOG = 'website',
+  jsonLd,
+  publiee,
+  modifiee,
+} = Astro.props;
+
+const canonique = url(chemin);
+const imageAbsolue = image.startsWith('http') ? image : `${SITE_URL}${image}`;
+const titreComplet =
+  chemin === '/' ? titre : `${titre} · ${SITE.shortName}`;
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{titreComplet}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonique} />
+<meta name="author" content={SITE.name} />
+<meta
+  name="robots"
+  content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1"
+/>
+
+<meta property="og:type" content={typeOG} />
+<meta property="og:site_name" content={SITE.name} />
+<meta property="og:locale" content={SITE.locale} />
+<meta property="og:title" content={titreComplet} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonique} />
+<meta property="og:image" content={imageAbsolue} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:type" content="image/png" />
+<meta property="og:image:alt" content={`${titre}, ${SITE.name}`} />
+{publiee && <meta property="article:published_time" content={publiee} />}
+{modifiee && <meta property="article:modified_time" content={modifiee} />}
+
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={titreComplet} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageAbsolue} />
+<meta name="twitter:image:alt" content={`${titre}, ${SITE.name}`} />
+
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/site.webmanifest" />
+<meta name="theme-color" content="#08090a" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#fbfbfa" media="(prefers-color-scheme: light)" />
+
+{
+  VERIFICATION_GOOGLE && (
+    <meta name="google-site-verification" content={VERIFICATION_GOOGLE} />
+  )
+}
+
+<meta name="geo.region" content="CG-16" />
+<meta name="geo.placename" content={SITE.city} />
+<meta name="geo.position" content={`${SITE.geo.lat};${SITE.geo.lng}`} />
+<meta name="ICBM" content={`${SITE.geo.lat}, ${SITE.geo.lng}`} />
+
+{jsonLd && <script type="application/ld+json" is:inline set:html={jsonLd} />}

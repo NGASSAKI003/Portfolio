@@ -1,0 +1,17 @@
+# build
+dist/
+.astro/
+
+# dependances
+node_modules/
+
+# environnement
+.env
+.env.production
+
+# systeme
+.DS_Store
+Thumbs.db
+
+# sources de travail (archives, originaux haute definition)
+_sources/

@@ -1,0 +1,563 @@
+---
+import { Image, getImage } from 'astro:assets';
+import { getCollection, render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Chiffres from '../../components/Chiffres.astro';
+import FilAriane from '../../components/FilAriane.astro';
+import Galerie from '../../components/Galerie.astro';
+import { LIBELLES_STATUT, SITE_URL } from '../../lib/site';
+import {
+  graphe,
+  noeudFilAriane,
+  noeudPage,
+  noeudPersonne,
+  noeudProjet,
+  noeudSiteWeb,
+} from '../../lib/jsonld';
+
+export async function getStaticPaths() {
+  const projets = (await getCollection('projets')).sort((a, b) => a.data.ordre - b.data.ordre);
+  return projets.map((projet, index) => ({
+    params: { slug: projet.id },
+    props: {
+      projet,
+      precedent: projets[index - 1] ?? null,
+      suivant: projets[index + 1] ?? null,
+    },
+  }));
+}
+
+const { projet, precedent, suivant } = Astro.props;
+const { data } = projet;
+const { Content } = await render(projet);
+
+const chemin = `/projets/${projet.id}`;
+const imagePartage = `/og/${projet.id}.png`;
+const statut = LIBELLES_STATUT[data.statut] ?? data.statut;
+
+const jsonLd = graphe([
+  noeudSiteWeb(),
+  noeudPersonne(),
+  noeudPage({
+    chemin,
+    titre: `${data.titre}, ${data.sousTitre}`,
+    description: data.resume,
+    image: `${SITE_URL}${imagePartage}`,
+    dateModification: data.dateModification,
+  }),
+  noeudProjet({
+    slug: projet.id,
+    titre: data.titre,
+    sousTitre: data.sousTitre,
+    resume: data.resume,
+    annee: data.annee,
+    pile: data.pile,
+    domaines: data.domaines,
+    lienDemo: data.lienDemo,
+    lienCode: data.lienCode,
+    typeSchema: data.typeSchema,
+    categorieApplication: data.categorieApplication,
+    systemeExploitation: data.systemeExploitation,
+    datePublication: data.datePublication,
+    dateModification: data.dateModification,
+    image: `${SITE_URL}${imagePartage}`,
+    gratuit: projet.id === 'one-zone',
+  }),
+  noeudFilAriane([
+    { nom: 'Accueil', chemin: '/' },
+    { nom: 'Projets', chemin: '/projets' },
+    { nom: data.titre, chemin },
+  ]),
+]);
+
+// Versions haute definition pour l'ouverture en plein ecran.
+const couvertureGrande = await getImage({ src: data.couverture, width: 1800, format: 'webp' });
+const preuveGrande = data.preuve
+  ? await getImage({ src: data.preuve.image, width: 1800, format: 'webp' })
+  : null;
+
+const meta = [
+  { cle: 'Rôle', valeur: data.role },
+  { cle: 'Période', valeur: data.periode ?? String(data.annee) },
+  { cle: 'Statut', valeur: statut },
+  { cle: 'Domaines', valeur: data.domaines.join(', ') },
+];
+---
+
+<Base
+  titre={`${data.titre}, ${data.sousTitre}`}
+  description={data.resume}
+  {chemin}
+  image={imagePartage}
+  typeOG="article"
+  {jsonLd}
+  publiee={data.datePublication}
+  modifiee={data.dateModification}
+>
+  <article class="projet">
+    <div class="shell">
+      <FilAriane
+        etapes={[
+          { nom: 'Accueil', href: '/' },
+          { nom: 'Projets', href: '/projets' },
+          { nom: data.titre },
+        ]}
+      />
+
+      <header class="projet__entete">
+        <p class="eyebrow entree">{data.periode ?? data.annee} · {statut}</p>
+        <h1 class="display projet__titre entree" style="--entree-delai:70ms">{data.titre}</h1>
+        <p class="projet__soustitre entree" style="--entree-delai:130ms">{data.sousTitre}</p>
+
+        {
+          (data.lienDemo || data.lienCode) && (
+            <div class="projet__liens entree" style="--entree-delai:190ms">
+              {data.lienDemo && (
+                <a class="bouton bouton--plein bouton--large" href={data.lienDemo} rel="noopener">
+                  Voir le projet en ligne
+                  <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true">
+                    <path
+                      d="M4 12 12 4M6 4h6v6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="1.6"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </a>
+              )}
+              {data.lienCode && (
+                <a class="bouton bouton--vide bouton--large" href={data.lienCode} rel="noopener">
+                  Code source
+                </a>
+              )}
+            </div>
+          )
+        }
+      </header>
+
+      <figure
+        class="projet__visuel entree"
+        style="--entree-delai:250ms"
+        transition:name={`couverture-${projet.id}`}
+      >
+        <button
+          type="button"
+          class="zoom"
+          data-zoom
+          data-zoom-src={couvertureGrande.src}
+          data-zoom-alt={data.couvertureAlt}
+          data-zoom-legende={`${data.titre}, ${data.sousTitre}`}
+          aria-label={`Agrandir : ${data.couvertureAlt}`}
+        >
+          <Image
+            src={data.couverture}
+            alt={data.couvertureAlt}
+            widths={[640, 1000, 1500]}
+            sizes="(min-width: 78rem) 72rem, 94vw"
+            loading="eager"
+            fetchpriority="high"
+          />
+        </button>
+      </figure>
+
+      {data.chiffres.length > 0 && <Chiffres chiffres={data.chiffres} class="projet__chiffres" />}
+
+      {
+        data.galerie.length > 0 && (
+          <Galerie titre={`${data.titre} en images`} vues={data.galerie} />
+        )
+      }
+
+      {
+        data.preuve && (
+          <figure class="preuve reveal">
+            <h2 class="mono-label">Pièce justificative</h2>
+            <button
+              type="button"
+              class="zoom preuve__cadre"
+              data-zoom
+              data-zoom-src={preuveGrande!.src}
+              data-zoom-alt={data.preuve.alt}
+              data-zoom-legende={data.preuve.legende}
+              aria-label={`Agrandir : ${data.preuve.alt}`}
+            >
+              <Image
+                src={data.preuve.image}
+                alt={data.preuve.alt}
+                widths={[600, 900, 1400]}
+                sizes="(min-width: 64rem) 44rem, 94vw"
+                loading="lazy"
+              />
+            </button>
+            <figcaption>{data.preuve.legende}</figcaption>
+          </figure>
+        )
+      }
+
+      <div class="projet__grille">
+        <aside class="projet__aside">
+          <dl class="fiche">
+            {
+              meta.map((ligne) => (
+                <div class="fiche__ligne">
+                  <dt>{ligne.cle}</dt>
+                  <dd>{ligne.valeur}</dd>
+                </div>
+              ))
+            }
+            <div class="fiche__ligne">
+              <dt>Pile technique</dt>
+              <dd>
+                <ul class="fiche__pile">
+                  {data.pile.map((outil) => <li>{outil}</li>)}
+                </ul>
+              </dd>
+            </div>
+          </dl>
+        </aside>
+
+        <div class="prose">
+          <Content />
+        </div>
+      </div>
+
+      <nav class="projet__suite" aria-label="Autres projets">
+        {
+          precedent ? (
+            <a class="suite halo lueur" href={`/projets/${precedent.id}`}>
+              <span class="mono-label">Projet précédent</span>
+              <span class="suite__titre">{precedent.data.titre}</span>
+            </a>
+          ) : (
+            <span class="suite-vide" />
+          )
+        }
+        {
+          suivant && (
+            <a class="suite suite--apres halo lueur" href={`/projets/${suivant.id}`}>
+              <span class="mono-label">Projet suivant</span>
+              <span class="suite__titre">{suivant.data.titre}</span>
+            </a>
+          )
+        }
+      </nav>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .projet {
+    padding-block: clamp(1rem, 3vw, 2rem) clamp(3.5rem, 8vw, 6.5rem);
+  }
+
+  /* ---------- Entête ---------- */
+
+  .projet__entete {
+    margin-block: clamp(1.75rem, 5vw, 3.5rem) clamp(1.75rem, 4vw, 2.75rem);
+    max-width: 48rem;
+  }
+
+  .projet__titre {
+    margin-block: 1rem 0.7rem;
+    font-size: var(--text-5xl);
+  }
+
+  .projet__soustitre {
+    font-size: var(--text-xl);
+    color: var(--c-text-2);
+    max-width: 32ch;
+  }
+
+  .projet__liens {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 1.75rem;
+  }
+
+  @media (min-width: 30rem) {
+    .projet__liens {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* ---------- Visuel ---------- */
+
+  .projet__visuel {
+    margin: 0;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--c-surface-2);
+    box-shadow: var(--ombre-levee);
+  }
+
+  .projet__visuel :global(img) {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top center;
+  }
+
+  @media (min-width: 48rem) {
+    .projet__visuel :global(img) {
+      aspect-ratio: 1366 / 723;
+    }
+  }
+
+  .projet__chiffres {
+    margin-top: clamp(1.25rem, 3vw, 2rem);
+  }
+
+  /* ---------- Pièce justificative ---------- */
+
+  .preuve {
+    margin: clamp(2.5rem, 6vw, 4rem) 0 0;
+    max-width: 46rem;
+  }
+
+  .preuve h2 {
+    margin-bottom: 1.1rem;
+  }
+
+  .preuve__cadre {
+    overflow: hidden;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-card);
+    background: var(--c-surface-2);
+    box-shadow: var(--ombre-carte);
+  }
+
+  .preuve__cadre :global(img) {
+    width: 100%;
+    height: auto;
+  }
+
+  .preuve figcaption {
+    margin-top: 0.85rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  /* ---------- Corps ---------- */
+
+  .projet__grille {
+    display: grid;
+    gap: clamp(2rem, 5vw, 3.5rem);
+    margin-top: clamp(2.5rem, 6vw, 4rem);
+  }
+
+  .fiche {
+    display: grid;
+    gap: 1.25rem;
+    margin: 0;
+    padding-top: 1.35rem;
+    border-top: 1px solid var(--c-line);
+  }
+
+  @media (min-width: 34rem) and (max-width: 63.99rem) {
+    .fiche {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1.5rem 2rem;
+    }
+  }
+
+  .fiche__ligne dt {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    margin-bottom: 0.4rem;
+  }
+
+  .fiche__ligne dd {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  .fiche__pile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+  }
+
+  .fiche__pile li {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--c-text-3);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    padding: 0.22rem 0.6rem;
+  }
+
+  /* ---------- Projet suivant ---------- */
+
+  .projet__suite {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: clamp(3.5rem, 8vw, 5.5rem);
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--c-line);
+  }
+
+  .suite {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    padding: 1.35rem 1.4rem;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-card);
+    background: var(--c-bg-elev);
+    transition:
+      border-color 0.35s var(--ease-sortie),
+      transform 0.25s var(--ease-ressort);
+  }
+
+  .suite:hover {
+    border-color: var(--c-line-forte);
+  }
+
+  .suite:active {
+    transform: scale(0.985);
+  }
+
+  .suite__titre {
+    font-family: var(--font-titre);
+    font-size: var(--text-xl);
+    color: var(--c-text);
+  }
+
+  @media (min-width: 44rem) {
+    .projet__suite {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .suite--apres {
+      text-align: right;
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .projet__grille {
+      grid-template-columns: 16rem minmax(0, 1fr);
+      gap: 4.5rem;
+      align-items: start;
+    }
+
+    .projet__aside {
+      position: sticky;
+      top: 6rem;
+    }
+  }
+</style>
+
+<style is:global>
+  /* ---------- Corps de texte des études de cas ---------- */
+
+  .prose {
+    max-width: 68ch;
+    color: var(--c-text-2);
+    font-size: var(--text-base);
+    line-height: 1.72;
+  }
+
+  .prose > * + * {
+    margin-top: 1.3em;
+  }
+
+  .prose h2 {
+    font-family: var(--font-titre);
+    font-size: var(--text-3xl);
+    color: var(--c-text);
+    margin-top: 2.4em;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--c-line);
+    scroll-margin-top: 5.5rem;
+  }
+
+  .prose > h2:first-child {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: 0;
+  }
+
+  .prose h3 {
+    font-family: var(--font-titre);
+    font-size: var(--text-xl);
+    color: var(--c-text);
+    margin-top: 2em;
+    scroll-margin-top: 5.5rem;
+  }
+
+  .prose h2 + p,
+  .prose h3 + p {
+    margin-top: 0.85em;
+  }
+
+  .prose strong {
+    color: var(--c-text);
+    font-weight: 600;
+  }
+
+  .prose a {
+    color: var(--c-accent);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+    text-decoration-thickness: 1px;
+  }
+
+  .prose ul {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .prose ul li {
+    position: relative;
+    padding-left: 1.35rem;
+  }
+
+  .prose ul li + li {
+    margin-top: 0.65em;
+  }
+
+  .prose ul li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.72em;
+    width: 7px;
+    height: 1.5px;
+    border-radius: 2px;
+    background: var(--c-accent);
+  }
+
+  .prose blockquote {
+    margin-inline: 0;
+    padding: 1.15rem 1.35rem;
+    border: 1px solid var(--c-line);
+    border-left: 2px solid var(--c-accent-ligne);
+    border-radius: 0 var(--radius-card) var(--radius-card) 0;
+    background: var(--c-bg-elev);
+    font-size: var(--text-sm);
+    color: var(--c-text-3);
+  }
+
+  .prose blockquote p + p {
+    margin-top: 0.8em;
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-line);
+    border-radius: 5px;
+    padding: 0.12em 0.4em;
+  }
+</style>

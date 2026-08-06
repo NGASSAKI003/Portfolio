@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import { NAVIGATION } from '../lib/site';
+---
+
+<Base
+  titre="Page introuvable"
+  description="Cette adresse ne correspond à aucune page de ce site."
+  chemin="/404"
+>
+  <section class="erreur">
+    <div class="shell erreur__contenu">
+      <p class="eyebrow">Erreur 404</p>
+      <h1 class="display erreur__titre">Cette page n'existe pas</h1>
+      <p class="lede">
+        L'adresse demandée ne correspond à rien sur ce site. Elle a peut-être changé,
+        ou elle n'a jamais existé.
+      </p>
+
+      <ul class="erreur__liens">
+        <li><a class="lien-souligne" href="/">Accueil</a></li>
+        {
+          NAVIGATION.map((lien) => (
+            <li>
+              <a class="lien-souligne" href={lien.href}>
+                {lien.libelle}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .erreur {
+    position: relative;
+    display: flex;
+    align-items: center;
+    min-height: 70vh;
+    padding-block: clamp(4rem, 10vw, 8rem);
+    overflow: hidden;
+  }
+
+
+  .erreur__titre {
+    margin-block: 1.2rem 1rem;
+    font-size: var(--text-4xl);
+  }
+
+  .erreur__liens {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.5rem;
+    margin-top: 2.2rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  .erreur__liens a {
+    /* Cible d'au moins 24px de haut, exigence WCAG 2.2 sur le tactile. */
+    display: inline-block;
+    padding-block: 0.35rem;
+  }
+</style>

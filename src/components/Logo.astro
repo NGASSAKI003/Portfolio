@@ -1,0 +1,46 @@
+---
+import { LOGO_VIEWBOX, LOGO_PATHS } from './logo-path';
+
+interface Props {
+  class?: string;
+  /** Vrai quand un texte voisin porte deja le nom : le SVG devient invisible aux lecteurs d'ecran. */
+  decoratif?: boolean;
+  titre?: string;
+}
+
+const { class: className, decoratif = false, titre = 'Logo de NGASSAKI-NDZA Anaclet Julien' } =
+  Astro.props;
+
+// Un identifiant par instance : le logo peut apparaitre plusieurs fois sur une
+// page (en-tete, pied de page) sans que les degrades se marchent dessus.
+const gradientId = `logo-degrade-${Math.random().toString(36).slice(2, 9)}`;
+---
+
+<svg
+  class:list={['logo', className]}
+  viewBox={LOGO_VIEWBOX}
+  xmlns="http://www.w3.org/2000/svg"
+  role={decoratif ? 'presentation' : 'img'}
+  aria-hidden={decoratif ? 'true' : undefined}
+  aria-label={decoratif ? undefined : titre}
+  focusable="false"
+>
+  {!decoratif && <title>{titre}</title>}
+  <defs>
+    <linearGradient id={gradientId} x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="var(--logo-from)"></stop>
+      <stop offset="100%" stop-color="var(--logo-to)"></stop>
+    </linearGradient>
+  </defs>
+  <g fill={`url(#${gradientId})`} set:html={LOGO_PATHS} />
+</svg>
+
+<style>
+  .logo {
+    height: 1em;
+    width: auto;
+    /* Les arrets du degrade sont des variables CSS : le logo suit le theme
+       sans qu'on ait a charger un second fichier. */
+    transition: opacity 0.3s var(--ease-sortie);
+  }
+</style>

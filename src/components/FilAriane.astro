@@ -1,0 +1,60 @@
+---
+interface Props {
+  /** Le dernier element est la page courante : il ne porte pas de lien. */
+  etapes: { nom: string; href?: string }[];
+}
+
+const { etapes } = Astro.props;
+---
+
+<nav class="fil" aria-label="Fil d'Ariane">
+  <ol>
+    {
+      etapes.map((etape, index) => (
+        <>
+          {index > 0 && <li class="fil__separateur" aria-hidden="true">/</li>}
+          <li>
+            {etape.href ? (
+              <a href={etape.href}>{etape.nom}</a>
+            ) : (
+              <span aria-current="page">{etape.nom}</span>
+            )}
+          </li>
+        </>
+      ))
+    }
+  </ol>
+</nav>
+
+<style>
+  .fil ol {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.05em;
+    color: var(--c-text-3);
+  }
+
+  .fil a,
+  .fil span {
+    /* Cible d'au moins 24px de haut, exigence WCAG 2.2 sur le tactile. */
+    display: inline-block;
+    padding-block: 0.45rem;
+  }
+
+  .fil a {
+    color: var(--c-text-3);
+    transition: color 0.25s var(--ease-sortie);
+  }
+
+  .fil a:hover {
+    color: var(--c-text);
+  }
+
+  .fil [aria-current='page'] {
+    color: var(--c-text-2);
+  }
+</style>

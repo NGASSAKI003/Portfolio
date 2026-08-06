@@ -1,0 +1,262 @@
+---
+import { Image } from 'astro:assets';
+import type { CollectionEntry } from 'astro:content';
+import { LIBELLES_STATUT } from '../lib/site';
+
+interface Props {
+  projet: CollectionEntry<'projets'>;
+  taille?: 'grande' | 'normale';
+  /** La premiere image visible n'est jamais differee : elle porte le LCP. */
+  prioritaire?: boolean;
+  /**
+   * Niveau du titre de la carte. Il depend de la page qui l'accueille :
+   * 2 quand les cartes suivent directement le h1, 3 quand une section les
+   * regroupe. Un niveau saute est une erreur d'accessibilite, pas un detail.
+   */
+  niveau?: 2 | 3;
+}
+
+const { projet, taille = 'normale', prioritaire = false, niveau = 3 } = Astro.props;
+const { data } = projet;
+const href = `/projets/${projet.id}`;
+const statut = LIBELLES_STATUT[data.statut] ?? data.statut;
+const Titre = `h${niveau}` as 'h2' | 'h3';
+const maxOutils = taille === 'grande' ? 6 : 3;
+---
+
+<article class:list={['carte', 'halo', 'lueur', `carte--${taille}`, 'reveal']}>
+  <a class="carte__lien" href={href} aria-labelledby={`titre-${projet.id}`}>
+    <div class="carte__visuel" transition:name={`couverture-${projet.id}`}>
+      <Image
+        src={data.couverture}
+        alt={data.couvertureAlt}
+        widths={taille === 'grande' ? [640, 960, 1400] : [420, 640, 900]}
+        sizes={
+          taille === 'grande'
+            ? '(min-width: 64rem) 64rem, 94vw'
+            : '(min-width: 64rem) 31rem, (min-width: 44rem) 46vw, 94vw'
+        }
+        loading={prioritaire ? 'eager' : 'lazy'}
+        fetchpriority={prioritaire ? 'high' : 'auto'}
+      />
+    </div>
+
+    <div class="carte__corps">
+      <p class="carte__meta">
+        <span class:list={['carte__statut', `carte__statut--${data.statut}`]}>{statut}</span>
+        <span aria-hidden="true">·</span>
+        <span>{data.periode ?? data.annee}</span>
+        <span aria-hidden="true">·</span>
+        <span>{data.role}</span>
+      </p>
+
+      <Titre class="carte__titre" id={`titre-${projet.id}`}>{data.titre}</Titre>
+      <p class="carte__soustitre">{data.sousTitre}</p>
+      <p class="carte__resume">{data.resume}</p>
+
+      <ul class="carte__pile" aria-label="Technologies utilisées">
+        {data.pile.slice(0, maxOutils).map((outil) => <li>{outil}</li>)}
+        {
+          data.pile.length > maxOutils && (
+            <li class="carte__pile-reste">+{data.pile.length - maxOutils}</li>
+          )
+        }
+      </ul>
+
+      <span class="carte__action">
+        Lire l'étude de cas
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <path
+            d="M2.5 8h11M9 3.5 13.5 8 9 12.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+      </span>
+    </div>
+  </a>
+</article>
+
+<style>
+  .carte {
+    position: relative;
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-lg);
+    background: var(--c-bg-elev);
+    overflow: hidden;
+    box-shadow: var(--ombre-carte);
+    transition:
+      border-color 0.4s var(--ease-sortie),
+      box-shadow 0.4s var(--ease-sortie),
+      transform 0.28s var(--ease-ressort);
+  }
+
+  .carte:hover {
+    border-color: var(--c-line-forte);
+  }
+
+  /* Retour au toucher : la carte s'enfonce sous le doigt, puis revient. */
+  .carte:active {
+    transform: scale(0.985);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .carte:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--ombre-levee);
+    }
+  }
+
+  .carte:focus-within {
+    border-color: var(--c-accent-ligne);
+  }
+
+  .carte__lien {
+    display: grid;
+    height: 100%;
+  }
+
+  .carte__visuel {
+    position: relative;
+    overflow: hidden;
+    background: var(--c-surface-2);
+    border-bottom: 1px solid var(--c-line);
+  }
+
+  .carte__visuel :global(img) {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: top center;
+    transition: transform 0.9s var(--ease-sortie);
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .carte:hover .carte__visuel :global(img) {
+      transform: scale(1.035);
+    }
+  }
+
+  .carte__corps {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: clamp(1.35rem, 4vw, 2rem);
+  }
+
+  /*
+   * Le statut vit dans la ligne de metadonnees, en texte.
+   * Une pastille de couleur posee sur l'image attirait l'oeil sur une
+   * information secondaire, et donnait a la carte un air de composant
+   * generique. Une ligne d'informations lisible fait plus serieux.
+   */
+  .carte__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.04em;
+    color: var(--c-text-3);
+  }
+
+  .carte__statut {
+    color: var(--c-text-2);
+  }
+
+  .carte__statut--en-ligne {
+    color: var(--c-accent);
+  }
+
+  .carte__statut--finaliste {
+    color: var(--c-or);
+  }
+
+  .carte__titre {
+    font-family: var(--font-titre);
+    font-size: var(--text-2xl);
+    margin-top: 0.2rem;
+  }
+
+  .carte--grande .carte__titre {
+    font-size: var(--text-3xl);
+  }
+
+  .carte__soustitre {
+    font-size: var(--text-base);
+    color: var(--c-text);
+  }
+
+  .carte__resume {
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+    max-width: 58ch;
+  }
+
+  .carte__pile {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-top: 0.45rem;
+  }
+
+  .carte__pile li {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--c-text-3);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    padding: 0.22rem 0.6rem;
+  }
+
+  .carte__pile-reste {
+    color: var(--c-text-2) !important;
+  }
+
+  .carte__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.85rem;
+    min-height: 1.75rem;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--c-accent);
+  }
+
+  .carte__action svg {
+    transition: transform 0.4s var(--ease-sortie);
+  }
+
+  .carte:hover .carte__action svg {
+    transform: translateX(4px);
+  }
+
+  @media (min-width: 56rem) {
+    .carte--grande .carte__lien {
+      grid-template-columns: 1.25fr 1fr;
+      align-items: stretch;
+    }
+
+    .carte--grande .carte__visuel {
+      border-bottom: 0;
+      border-inline-end: 1px solid var(--c-line);
+      height: 100%;
+    }
+
+    .carte--grande .carte__visuel :global(img) {
+      height: 100%;
+      aspect-ratio: auto;
+      min-height: 26rem;
+    }
+
+    .carte--grande .carte__corps {
+      justify-content: center;
+      padding: clamp(2rem, 4vw, 3.25rem);
+    }
+  }
+</style>

@@ -1,0 +1,298 @@
+---
+import Base from '../layouts/Base.astro';
+import FilAriane from '../components/FilAriane.astro';
+import { PROFILES, SITE, SITE_URL } from '../lib/site';
+import {
+  graphe,
+  noeudFilAriane,
+  noeudPage,
+  noeudPersonne,
+  noeudSiteWeb,
+} from '../lib/jsonld';
+
+const description =
+  "Contacter NGASSAKI-NDZA Anaclet Julien, développeur full stack à Pointe-Noire, Congo. Disponible immédiatement pour un poste, un stage ou une mission, sur site ou à distance.";
+
+const jsonLd = graphe([
+  noeudSiteWeb(),
+  noeudPersonne(),
+  noeudPage({
+    chemin: '/contact',
+    titre: 'Contact',
+    description,
+    type: 'ContactPage',
+    image: `${SITE_URL}/og/contact.png`,
+  }),
+  noeudFilAriane([
+    { nom: 'Accueil', chemin: '/' },
+    { nom: 'Contact', chemin: '/contact' },
+  ]),
+]);
+
+const whatsapp = `https://wa.me/${SITE.phone.replace(/[^0-9]/g, '')}`;
+
+const canaux = [
+  {
+    cle: 'E-mail',
+    valeur: SITE.email,
+    href: `mailto:${SITE.email}`,
+    note: 'Le plus sûr pour un dossier complet ou une offre.',
+    copiable: true,
+  },
+  {
+    cle: 'WhatsApp',
+    valeur: SITE.phoneDisplay,
+    href: whatsapp,
+    note: 'Le plus rapide. Réponse dans la journée.',
+    copiable: false,
+  },
+  ...PROFILES.map((profil) => ({
+    cle: profil.name,
+    valeur: profil.handle,
+    href: profil.url,
+    note: profil.name === 'GitHub' ? 'Code et contributions.' : 'Le produit, en ligne.',
+    copiable: false,
+  })),
+];
+
+const attentes = [
+  'Un poste ou un stage en développement web, mobile ou API.',
+  'Une mission ponctuelle, du site vitrine à la refonte complète.',
+  "Un projet qui a besoin d'être terminé, pas seulement commencé.",
+];
+---
+
+<Base
+  titre="Contact"
+  {description}
+  chemin="/contact"
+  image="/og/contact.png"
+  {jsonLd}
+>
+  <section class="tete">
+    <div class="shell">
+      <FilAriane etapes={[{ nom: 'Accueil', href: '/' }, { nom: 'Contact' }]} />
+
+      <h1 class="display tete__titre entree">Travaillons ensemble</h1>
+      <p class="lede entree" style="--entree-delai:80ms">
+        Disponible immédiatement, à Pointe-Noire comme à distance. Écrivez-moi, je
+        réponds.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-serree">
+    <div class="shell contact">
+      <div class="contact__canaux">
+        <h2 class="mono-label">Me joindre</h2>
+        <ul class="canaux">
+          {
+            canaux.map((canal) => (
+              <li class="canal reveal">
+                <a class="canal__lien" href={canal.href} rel="noopener">
+                  <span class="canal__cle">{canal.cle}</span>
+                  <span class="canal__valeur">{canal.valeur}</span>
+                  <span class="canal__note">{canal.note}</span>
+                </a>
+                {canal.copiable && (
+                  <button
+                    type="button"
+                    class="canal__copier"
+                    data-copier={canal.valeur}
+                    aria-label={`Copier l'adresse ${canal.valeur}`}
+                  >
+                    <span data-copier-texte>Copier</span>
+                  </button>
+                )}
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+
+      <aside class="contact__attentes reveal">
+        <h2 class="mono-label">Ce qui m'intéresse</h2>
+        <ul>
+          {attentes.map((ligne) => <li>{ligne}</li>)}
+        </ul>
+
+        <div class="contact__lieu">
+          <h3 class="mono-label">Où je suis</h3>
+          <p>
+            {SITE.city}, {SITE.countryName}<br />
+            Fuseau horaire WAT, UTC+1
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .tete {
+    position: relative;
+    padding-block: clamp(1.5rem, 4vw, 2.5rem) clamp(2rem, 5vw, 3rem);
+    overflow: hidden;
+  }
+
+
+  .tete__titre {
+    margin-block: clamp(2rem, 5vw, 3rem) 1rem;
+    font-size: var(--text-5xl);
+    max-width: 14ch;
+  }
+
+  .contact {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 4rem);
+    align-items: start;
+  }
+
+  .canaux {
+    margin-top: 1.25rem;
+    border-top: 1px solid var(--c-line);
+  }
+
+  .canal {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    border-bottom: 1px solid var(--c-line);
+    transition: background-color 0.3s var(--ease-sortie);
+  }
+
+  .canal:hover {
+    background: var(--c-bg-elev);
+  }
+
+  .canal__lien {
+    flex: 1;
+    display: grid;
+    gap: 0.3rem;
+    padding-block: 1.4rem;
+    padding-inline: 0.25rem;
+  }
+
+  .canal__cle {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+
+  .canal__valeur {
+    font-family: var(--font-titre);
+    font-size: var(--text-xl);
+    color: var(--c-text);
+    overflow-wrap: anywhere;
+  }
+
+  .canal__note {
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  .canal__copier {
+    flex-shrink: 0;
+    margin-inline-end: 0.25rem;
+    padding: 0.5rem 0.85rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    transition:
+      color 0.25s var(--ease-sortie),
+      border-color 0.25s var(--ease-sortie);
+  }
+
+  .canal__copier:hover {
+    color: var(--c-text);
+    border-color: var(--c-line-forte);
+  }
+
+  .canal__copier[data-copie='oui'] {
+    color: var(--c-accent);
+    border-color: var(--c-accent-ligne);
+  }
+
+  .contact__attentes ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    margin-top: 1.25rem;
+  }
+
+  .contact__attentes li {
+    position: relative;
+    padding-left: 1.4rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  .contact__attentes li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.72em;
+    width: 6px;
+    height: 1px;
+    background: var(--c-accent);
+  }
+
+  .contact__lieu {
+    margin-top: 2.5rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--c-line);
+  }
+
+  .contact__lieu p {
+    margin-top: 0.9rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+    line-height: 1.8;
+  }
+
+  @media (min-width: 56rem) {
+    .contact {
+      grid-template-columns: 1.5fr 1fr;
+      gap: 5rem;
+    }
+  }
+</style>
+
+<script>
+  function initCopie() {
+    document.querySelectorAll<HTMLButtonElement>('[data-copier]').forEach((bouton) => {
+      if (bouton.dataset.pret === 'oui') return;
+      bouton.dataset.pret = 'oui';
+
+      const etiquette = bouton.querySelector<HTMLElement>('[data-copier-texte]');
+      if (!etiquette) return;
+      const depart = etiquette.textContent ?? 'Copier';
+
+      bouton.addEventListener('click', async () => {
+        const valeur = bouton.dataset.copier;
+        if (!valeur || !navigator.clipboard) return;
+        try {
+          await navigator.clipboard.writeText(valeur);
+          etiquette.textContent = 'Copié';
+          bouton.dataset.copie = 'oui';
+          window.setTimeout(() => {
+            etiquette.textContent = depart;
+            delete bouton.dataset.copie;
+          }, 2000);
+        } catch {
+          /* presse-papiers refusé : le lien mailto reste disponible */
+        }
+      });
+    });
+  }
+
+  initCopie();
+  document.addEventListener('astro:page-load', initCopie);
+</script>

@@ -1,0 +1,162 @@
+---
+import { ClientRouter } from 'astro:transitions';
+import Head from '../components/Head.astro';
+import Header from '../components/Header.astro';
+import Dock from '../components/Dock.astro';
+import Footer from '../components/Footer.astro';
+import Visionneuse from '../components/Visionneuse.astro';
+import { SITE } from '../lib/site';
+import '../styles/global.css';
+
+interface Props {
+  titre: string;
+  description: string;
+  chemin: string;
+  image?: string;
+  typeOG?: 'website' | 'article' | 'profile';
+  jsonLd?: string;
+  publiee?: string;
+  modifiee?: string;
+}
+
+const props = Astro.props;
+---
+
+<!doctype html>
+<html lang={SITE.lang} data-theme="sombre">
+  <head>
+    <Head {...props} />
+
+    <script is:inline>
+      // Applique le theme avant le premier rendu : aucun clignotement au chargement.
+      // Le sombre est le defaut assume du site, la preference systeme ne le remplace pas.
+      (function () {
+        function appliquer() {
+          var racine = document.documentElement;
+          var choix = 'sombre';
+          try {
+            if (localStorage.getItem('theme') === 'clair') choix = 'clair';
+          } catch (e) {
+            /* stockage indisponible : on reste sur le defaut */
+          }
+          racine.dataset.theme = choix;
+        }
+        appliquer();
+        // Les transitions de page remplacent l'element racine : sans ce rappel,
+        // un visiteur en theme clair repasserait en sombre a chaque navigation.
+        document.addEventListener('astro:after-swap', appliquer);
+      })();
+    </script>
+
+    <ClientRouter />
+  </head>
+
+  <body>
+    <div class="aurore" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+
+    <a class="saut" href="#contenu">Aller au contenu</a>
+    <Header />
+    <main id="contenu">
+      <slot />
+    </main>
+    <Footer />
+    <Dock />
+    <Visionneuse />
+
+    <style is:global>
+      body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100dvh;
+        /* Le contenu ne passe jamais sous la barre inferieure. */
+        padding-bottom: calc(var(--dock) + var(--marge-basse));
+      }
+
+      @media (min-width: 48rem) {
+        body {
+          padding-bottom: 0;
+        }
+      }
+
+      main {
+        flex: 1 0 auto;
+      }
+
+      .saut {
+        position: fixed;
+        top: 0.75rem;
+        left: 0.75rem;
+        z-index: 100;
+        padding: 0.75rem 1.15rem;
+        background: var(--c-accent);
+        color: var(--c-accent-ink);
+        font-size: var(--text-sm);
+        font-weight: 500;
+        border-radius: 10px;
+        transform: translateY(-180%);
+        transition: transform 0.28s var(--ease-sortie);
+      }
+
+      .saut:focus {
+        transform: none;
+      }
+    </style>
+
+    <script>
+      // La revelation a la lecture et l'etat de la barre haute sont geres en CSS.
+      // Le seul comportement confie au script est la bascule de theme, qui ne
+      // peut pas s'en passer : elle doit garder une trace du choix du visiteur.
+      function initBasculeTheme() {
+        const bouton = document.querySelector<HTMLButtonElement>('[data-bascule-theme]');
+        if (!bouton || bouton.dataset.pret === 'oui') return;
+        bouton.dataset.pret = 'oui';
+
+        bouton.addEventListener('click', () => {
+          const racine = document.documentElement;
+          const suivant = racine.dataset.theme === 'clair' ? 'sombre' : 'clair';
+          racine.dataset.theme = suivant;
+          try {
+            localStorage.setItem('theme', suivant);
+          } catch (e) {
+            /* navigation privee : le choix ne survit pas a la session, ce n'est pas grave */
+          }
+        });
+      }
+
+      // Halo qui suit le pointeur sur les cartes. Un seul ecouteur pour toute
+      // la page, et seulement la ou une souris existe : sur un ecran tactile,
+      // le doigt masque l'effet.
+      function initHalo() {
+        if (!window.matchMedia('(hover: hover) and (pointer: fine)').matches) return;
+        if (document.body.dataset.haloPret === 'oui') return;
+        document.body.dataset.haloPret = 'oui';
+
+        document.addEventListener(
+          'pointermove',
+          (evenement) => {
+            const cible = (evenement.target as Element | null)?.closest<HTMLElement>('.halo');
+            if (!cible) return;
+            const cadre = cible.getBoundingClientRect();
+            cible.style.setProperty(
+              '--halo-x',
+              `${((evenement.clientX - cadre.left) / cadre.width) * 100}%`,
+            );
+            cible.style.setProperty(
+              '--halo-y',
+              `${((evenement.clientY - cadre.top) / cadre.height) * 100}%`,
+            );
+          },
+          { passive: true },
+        );
+      }
+
+      initBasculeTheme();
+      initHalo();
+      document.addEventListener('astro:page-load', () => {
+        initBasculeTheme();
+        initHalo();
+      });
+    </script>
+  </body>
+</html>

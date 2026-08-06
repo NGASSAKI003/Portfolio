@@ -1,0 +1,117 @@
+---
+import { getCollection } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import CarteProjet from '../../components/CarteProjet.astro';
+import FilAriane from '../../components/FilAriane.astro';
+import { SITE_URL } from '../../lib/site';
+import {
+  graphe,
+  noeudFilAriane,
+  noeudListeProjets,
+  noeudPage,
+  noeudPersonne,
+  noeudProjet,
+  noeudSiteWeb,
+} from '../../lib/jsonld';
+
+const projets = (await getCollection('projets')).sort((a, b) => a.data.ordre - b.data.ordre);
+
+const description =
+  "Les projets de NGASSAKI-NDZA Anaclet Julien : One Zone, la place de marché nationale du Congo, Y-MENI Sentinel et la refonte de ce portfolio. Études de cas complètes.";
+
+const jsonLd = graphe([
+  noeudSiteWeb(),
+  noeudPersonne(),
+  noeudPage({
+    chemin: '/projets',
+    titre: 'Projets',
+    description,
+    type: 'CollectionPage',
+    image: `${SITE_URL}/og/projets.png`,
+  }),
+  ...projets.map((projet) =>
+    noeudProjet(
+      {
+        slug: projet.id,
+        titre: projet.data.titre,
+        sousTitre: projet.data.sousTitre,
+        resume: projet.data.resume,
+        annee: projet.data.annee,
+        pile: projet.data.pile,
+        domaines: projet.data.domaines,
+        typeSchema: projet.data.typeSchema,
+      },
+      false,
+    ),
+  ),
+  noeudListeProjets(projets.map((p) => ({ slug: p.id, titre: p.data.titre }))),
+  noeudFilAriane([
+    { nom: 'Accueil', chemin: '/' },
+    { nom: 'Projets', chemin: '/projets' },
+  ]),
+]);
+---
+
+<Base
+  titre="Projets"
+  {description}
+  chemin="/projets"
+  image="/og/projets.png"
+  {jsonLd}
+>
+  <section class="tete">
+    <div class="shell">
+      <FilAriane etapes={[{ nom: 'Accueil', href: '/' }, { nom: 'Projets' }]} />
+
+      <h1 class="display tete__titre entree">Projets</h1>
+      <p class="lede entree" style="--entree-delai:80ms">
+        Chaque projet a sa page, son problème de départ, ses choix techniques et ce
+        qu'ils ont coûté. Pas de vignettes sans contenu.
+      </p>
+    </div>
+  </section>
+
+  <section class="section-serree">
+    <div class="shell liste">
+      {
+        projets.map((projet, index) => (
+          <CarteProjet
+            projet={projet}
+            taille={index === 0 ? 'grande' : 'normale'}
+            prioritaire={index === 0}
+            niveau={2}
+          />
+        ))
+      }
+    </div>
+  </section>
+</Base>
+
+<style>
+  .tete {
+    position: relative;
+    padding-block: clamp(1.5rem, 4vw, 2.5rem) clamp(2.5rem, 6vw, 4rem);
+    overflow: hidden;
+  }
+
+
+  .tete__titre {
+    margin-block: clamp(2rem, 5vw, 3rem) 1rem;
+    font-size: var(--text-5xl);
+  }
+
+  .liste {
+    display: grid;
+    gap: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  @media (min-width: 56rem) {
+    .liste {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .liste > :global(.carte--grande) {
+      grid-column: 1 / -1;
+    }
+  }
+</style>

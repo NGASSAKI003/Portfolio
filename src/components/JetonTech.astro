@@ -1,0 +1,84 @@
+---
+import { trouverTechnologie } from '../lib/technologies';
+import { lisibleSurClair, lisibleSurSombre } from '../lib/couleurs';
+
+interface Props {
+  nom: string;
+}
+
+const { nom } = Astro.props;
+const techno = trouverTechnologie(nom);
+
+/**
+ * Petit jeton logo plus nom, pour les listes denses.
+ * Les technologies sans logo officiel restent en texte seul : mieux vaut une
+ * absence assumee qu'une icone approximative.
+ */
+const styleMarque = techno
+  ? `--marque-sombre:${lisibleSurSombre(`#${techno.icone.hex}`)};--marque-claire:${lisibleSurClair(`#${techno.icone.hex}`)}`
+  : undefined;
+---
+
+<span class:list={['jeton-tech', techno && 'jeton-tech--logo']} style={styleMarque}>
+  {
+    techno && (
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+        <path d={techno.icone.path} fill="currentColor" />
+      </svg>
+    )
+  }
+  {nom}
+</span>
+
+<style>
+  .jeton-tech {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.28rem 0.65rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.01em;
+    color: var(--c-text-2);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-pill);
+    transition:
+      color 0.3s var(--ease-sortie),
+      border-color 0.3s var(--ease-sortie);
+  }
+
+  .jeton-tech--logo {
+    --marque: var(--marque-sombre);
+  }
+
+  :global([data-theme='clair']) .jeton-tech--logo {
+    --marque: var(--marque-claire);
+  }
+
+  .jeton-tech svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    flex-shrink: 0;
+    color: var(--c-text-3);
+    transition:
+      color 0.3s var(--ease-sortie),
+      transform 0.4s var(--ease-ressort);
+  }
+
+  @media (hover: hover) {
+    .jeton-tech--logo:hover {
+      color: var(--c-text);
+      border-color: color-mix(in srgb, var(--marque) 45%, transparent);
+    }
+
+    .jeton-tech--logo:hover svg {
+      color: var(--marque);
+    }
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .jeton-tech--logo:hover svg {
+      transform: scale(1.18) rotate(-8deg);
+    }
+  }
+</style>

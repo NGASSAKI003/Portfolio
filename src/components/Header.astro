@@ -1,0 +1,233 @@
+---
+import Logo from './Logo.astro';
+import { NAVIGATION, SITE } from '../lib/site';
+
+/**
+ * Barre haute.
+ *
+ * Sur mobile elle se reduit a l'essentiel, la marque et la bascule de theme :
+ * la navigation vit en bas, sous le pouce (voir Dock.astro). Aucun menu cache,
+ * donc aucun JavaScript ici.
+ */
+const chemin = Astro.url.pathname.replace(/\/$/, '') || '/';
+const estActif = (href: string) => chemin === href || chemin.startsWith(`${href}/`);
+---
+
+<header class="entete">
+  <div class="shell entete__interieur">
+    <a class="marque" href="/" aria-label={`${SITE.name}, retour à l'accueil`}>
+      <Logo class="marque__logo" decoratif />
+      <span class="marque__nom">{SITE.shortName}</span>
+    </a>
+
+    <nav class="nav-large" aria-label="Navigation principale">
+      <ul>
+        {
+          NAVIGATION.map((lien) => (
+            <li>
+              <a
+                href={lien.href}
+                class="nav-lien"
+                aria-current={estActif(lien.href) ? 'page' : undefined}
+              >
+                {lien.libelle}
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+
+    <button
+      type="button"
+      class="bascule"
+      data-bascule-theme
+      aria-label="Basculer entre le thème sombre et le thème clair"
+    >
+      <svg class="bascule__icone bascule__icone--lune" viewBox="0 0 24 24" aria-hidden="true">
+        <path
+          d="M20.3 14.6A8.5 8.5 0 0 1 9.4 3.7a8.5 8.5 0 1 0 10.9 10.9Z"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linejoin="round"></path>
+      </svg>
+      <svg class="bascule__icone bascule__icone--soleil" viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"
+        ></circle>
+        <path
+          d="M12 2.6v2.2M12 19.2v2.2M2.6 12h2.2M19.2 12h2.2M5.4 5.4l1.6 1.6M17 17l1.6 1.6M18.6 5.4 17 7M7 17l-1.6 1.6"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"></path>
+      </svg>
+    </button>
+  </div>
+</header>
+
+<style>
+  .entete {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: 1px solid transparent;
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
+  }
+
+  /*
+   * La barre se pose sur le contenu des que la page defile, sans JavaScript :
+   * l'animation est pilotee par la position de defilement elle meme.
+   * Sans prise en charge, la barre reste simplement transparente.
+   */
+  @supports (animation-timeline: scroll()) {
+    .entete {
+      animation: poser-entete linear both;
+      animation-timeline: scroll(root block);
+      animation-range: 0 2.5rem;
+    }
+  }
+
+  @keyframes poser-entete {
+    to {
+      background: var(--c-verre);
+      border-bottom-color: var(--c-line);
+    }
+  }
+
+  .entete__interieur {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    height: var(--barre-haute);
+  }
+
+  .marque {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-shrink: 0;
+    padding-block: 0.5rem;
+    transition: transform 0.2s var(--ease-ressort);
+  }
+
+  .marque:active {
+    transform: scale(0.96);
+  }
+
+  .marque__logo {
+    height: 1.5rem;
+  }
+
+  .marque__nom {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--c-text);
+    white-space: nowrap;
+    transition: color 0.25s var(--ease-sortie);
+  }
+
+  .marque:hover .marque__nom {
+    color: var(--c-accent);
+  }
+
+  .nav-large {
+    display: none;
+    margin-inline-start: auto;
+  }
+
+  .nav-large ul {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .nav-lien {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.5rem;
+    padding-inline: 0.9rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+    border-radius: var(--radius-pill);
+    transition:
+      color 0.25s var(--ease-sortie),
+      background-color 0.25s var(--ease-sortie);
+  }
+
+  .nav-lien:hover {
+    color: var(--c-text);
+    background: var(--c-surface-2);
+  }
+
+  .nav-lien[aria-current='page'] {
+    color: var(--c-text);
+  }
+
+  .nav-lien[aria-current='page']::after {
+    content: '';
+    position: absolute;
+    left: 0.9rem;
+    right: 0.9rem;
+    bottom: 0.3rem;
+    height: 1.5px;
+    border-radius: 2px;
+    background: var(--c-accent);
+  }
+
+  .bascule {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 44px : cible tactile confortable, meme sur un petit ecran. */
+    width: 2.75rem;
+    height: 2.75rem;
+    border-radius: var(--radius-pill);
+    color: var(--c-text-2);
+    transition:
+      color 0.25s var(--ease-sortie),
+      background-color 0.25s var(--ease-sortie),
+      transform 0.2s var(--ease-ressort);
+  }
+
+  .bascule:hover {
+    color: var(--c-text);
+    background: var(--c-surface-2);
+  }
+
+  .bascule:active {
+    transform: scale(0.9);
+  }
+
+  .bascule__icone {
+    width: 1.15rem;
+    height: 1.15rem;
+    position: absolute;
+    transition:
+      opacity 0.3s var(--ease-sortie),
+      transform 0.45s var(--ease-sortie);
+  }
+
+  :global([data-theme='sombre']) .bascule__icone--soleil,
+  :global([data-theme='clair']) .bascule__icone--lune {
+    opacity: 0;
+    transform: rotate(-60deg) scale(0.6);
+  }
+
+  :global([data-theme='sombre']) .bascule__icone--lune,
+  :global([data-theme='clair']) .bascule__icone--soleil {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (min-width: 48rem) {
+    .nav-large {
+      display: block;
+    }
+  }
+</style>

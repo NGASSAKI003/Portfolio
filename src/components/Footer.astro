@@ -1,0 +1,154 @@
+---
+import Logo from './Logo.astro';
+import Constellation from './Constellation.astro';
+import { NAVIGATION, PROFILES, SITE } from '../lib/site';
+
+const annee = new Date().getFullYear();
+const whatsapp = `https://wa.me/${SITE.phone.replace(/[^0-9]/g, '')}`;
+---
+
+<footer class="pied">
+  <div class="shell">
+    <Constellation />
+
+    <div class="pied__haut">
+      <div class="pied__marque">
+        <a href="/" class="pied__logo" aria-label={`${SITE.name}, retour à l'accueil`}>
+          <Logo decoratif />
+        </a>
+        <p class="pied__phrase">
+          Développeur full stack à Pointe-Noire. Je construis des produits qui tiennent
+          en production, pas des maquettes.
+        </p>
+        <p class="pied__dispo">Disponible pour un poste ou une mission</p>
+      </div>
+
+      <nav class="pied__colonne" aria-label="Navigation du pied de page">
+        <h2 class="mono-label">Le site</h2>
+        <ul>
+          <li><a class="lien-souligne" href="/">Accueil</a></li>
+          {
+            NAVIGATION.map((lien) => (
+              <li>
+                <a class="lien-souligne" href={lien.href}>
+                  {lien.libelle}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+
+      <div class="pied__colonne">
+        <h2 class="mono-label">Me joindre</h2>
+        <ul>
+          <li><a class="lien-souligne" href={`mailto:${SITE.email}`}>{SITE.email}</a></li>
+          <li>
+            <a class="lien-souligne" href={whatsapp} rel="noopener">
+              {SITE.phoneDisplay}
+            </a>
+          </li>
+          {
+            PROFILES.map((profil) => (
+              <li>
+                <a class="lien-souligne" href={profil.url} rel="noopener me">
+                  {profil.name}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="pied__bas">
+      <p>© {annee} {SITE.name}</p>
+      <p class="pied__lieu">{SITE.city}, {SITE.countryName}</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .pied {
+    border-top: 1px solid var(--c-line);
+    /* La constellation fournit deja la respiration en haut. */
+    padding-block: clamp(1.75rem, 4vw, 2.75rem) 2rem;
+    margin-top: auto;
+  }
+
+  .pied__haut {
+    display: grid;
+    gap: clamp(2.5rem, 6vw, 4rem);
+    grid-template-columns: 1fr;
+  }
+
+  .pied__logo {
+    display: inline-block;
+    font-size: 1.9rem;
+    margin-bottom: 1.25rem;
+    transition: transform 0.25s var(--ease-ressort);
+  }
+
+  .pied__logo:active {
+    transform: scale(0.94);
+  }
+
+  .pied__phrase {
+    max-width: 34ch;
+    color: var(--c-text-2);
+    font-size: var(--text-sm);
+  }
+
+  .pied__dispo {
+    display: inline-block;
+    margin-top: 1.4rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.06em;
+    color: var(--c-accent);
+  }
+
+  .pied__colonne h2 {
+    margin-bottom: 1.15rem;
+  }
+
+  .pied__colonne ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .pied__colonne a {
+    /* Cible d'au moins 24px de haut, exigence WCAG 2.2 sur le tactile. */
+    display: inline-block;
+    padding-block: 0.3rem;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+    transition: color 0.25s var(--ease-sortie);
+    overflow-wrap: anywhere;
+  }
+
+  .pied__colonne a:hover {
+    color: var(--c-text);
+  }
+
+  .pied__bas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem 1.5rem;
+    margin-top: clamp(3rem, 7vw, 4.5rem);
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--c-line);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.05em;
+    color: var(--c-text-3);
+  }
+
+  @media (min-width: 40rem) {
+    .pied__haut {
+      grid-template-columns: 1.6fr 1fr 1.2fr;
+    }
+  }
+</style>

@@ -1,0 +1,437 @@
+---
+import { LOGO_PATHS, LOGO_VIEWBOX } from './logo-path';
+
+/**
+ * Constellation interactive.
+ *
+ * Le logo est dessine par un nuage de points qui fuient le doigt ou le curseur,
+ * puis reviennent en place par ressort. Un appui envoie une onde.
+ *
+ * Trois regles ont guide l'ecriture :
+ *   1. Rien d'essentiel ne passe par la. C'est une signature, pas un contenu.
+ *      Sans JavaScript, la zone reste vide et personne ne perd d'information.
+ *   2. Ca s'arrete tout seul. Hors ecran, onglet cache, ou si le systeme demande
+ *      moins d'animation, la boucle ne tourne pas.
+ *   3. Le trace du logo n'est pas duplique. Le composant lit le SVG deja present
+ *      dans la page, donc pas un octet de plus a telecharger.
+ */
+---
+
+<div class="constellation" data-constellation>
+  <canvas data-constellation-toile aria-hidden="true"></canvas>
+
+  <!-- Source du trace, jamais affichee : elle sert de patron au nuage de points. -->
+  <svg
+    class="constellation__patron"
+    viewBox={LOGO_VIEWBOX}
+    xmlns="http://www.w3.org/2000/svg"
+    aria-hidden="true"
+    data-constellation-patron
+  >
+    <g fill="#ffffff" set:html={LOGO_PATHS} />
+  </svg>
+
+  <p class="constellation__indice">
+    <span data-constellation-indice>Passez le doigt sur la constellation</span>
+  </p>
+</div>
+
+<style>
+  .constellation {
+    position: relative;
+    height: clamp(11rem, 32vw, 17rem);
+    margin-bottom: clamp(2.5rem, 6vw, 4rem);
+    /* Le nuage touche les bords de l'ecran : il se joue du cadre. */
+    margin-inline: calc(clamp(1.25rem, 5vw, 3rem) * -1);
+    overflow: hidden;
+    touch-action: pan-y;
+  }
+
+  .constellation canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .constellation__patron {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .constellation__indice {
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0.35rem;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+    opacity: 0;
+    transition: opacity 0.6s var(--ease-sortie);
+    pointer-events: none;
+  }
+
+  .constellation[data-pret='oui'] .constellation__indice {
+    opacity: 0.75;
+  }
+
+  .constellation[data-touche='oui'] .constellation__indice {
+    opacity: 0;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .constellation__indice {
+      display: none;
+    }
+  }
+</style>
+
+<script>
+  interface Particule {
+    x: number;
+    y: number;
+    cx: number;
+    cy: number;
+    vx: number;
+    vy: number;
+    phase: number;
+    taille: number;
+  }
+
+  const RESSORT = 0.014;
+  const FRICTION = 0.87;
+  const RAYON_POINTEUR = 92;
+  const FORCE_POINTEUR = 30;
+  const FORCE_ONDE = 46;
+
+  let arreter: (() => void) | null = null;
+
+  function couleurAccent(): string {
+    const valeur = getComputedStyle(document.documentElement)
+      .getPropertyValue('--c-accent')
+      .trim();
+    return valeur || '#5b8cff';
+  }
+
+  /** Rasterise le SVG deja present dans la page pour en tirer un masque. */
+  function patronVersImage(patron: SVGSVGElement): Promise<HTMLImageElement> {
+    const copie = patron.cloneNode(true) as SVGSVGElement;
+    const boite = (copie.getAttribute('viewBox') ?? '0 0 100 100').split(/\s+/).map(Number);
+    copie.setAttribute('width', String(boite[2]));
+    copie.setAttribute('height', String(boite[3]));
+    // Les remplissages du composant Logo pointent vers un degrade qui depend de
+    // variables CSS. Hors de la page, elles ne resolvent pas : on force un aplat.
+    copie.querySelectorAll('[fill]').forEach((n) => n.setAttribute('fill', '#ffffff'));
+
+    const source = new XMLSerializer().serializeToString(copie);
+    const image = new Image();
+    image.decoding = 'async';
+    return new Promise((resoudre, rejeter) => {
+      image.onload = () => resoudre(image);
+      image.onerror = rejeter;
+      image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(source)}`;
+    });
+  }
+
+  /** Echantillonne le masque et renvoie les positions cibles des particules. */
+  function semerParticules(
+    image: HTMLImageElement,
+    largeur: number,
+    hauteur: number,
+    objectif: number,
+  ): Particule[] {
+    const ratio = Math.min((largeur * 0.82) / image.width, (hauteur * 0.78) / image.height);
+    const lDessin = image.width * ratio;
+    const hDessin = image.height * ratio;
+    const dx = (largeur - lDessin) / 2;
+    const dy = (hauteur - hDessin) / 2;
+
+    const atelier = document.createElement('canvas');
+    atelier.width = Math.max(1, Math.round(largeur));
+    atelier.height = Math.max(1, Math.round(hauteur));
+    const pinceau = atelier.getContext('2d', { willReadFrequently: true });
+    if (!pinceau) return [];
+    pinceau.drawImage(image, dx, dy, lDessin, hDessin);
+
+    const pixels = pinceau.getImageData(0, 0, atelier.width, atelier.height).data;
+    const candidats: [number, number][] = [];
+    const pas = 3;
+    for (let y = 0; y < atelier.height; y += pas) {
+      for (let x = 0; x < atelier.width; x += pas) {
+        if (pixels[(y * atelier.width + x) * 4 + 3] > 128) candidats.push([x, y]);
+      }
+    }
+    if (!candidats.length) return [];
+
+    // Sous-echantillonnage regulier : la densite reste homogene quelle que
+    // soit la taille de l'ecran, et le cout de la boucle reste borne.
+    const saut = Math.max(1, Math.floor(candidats.length / objectif));
+    const particules: Particule[] = [];
+
+    for (let i = 0; i < candidats.length; i += saut) {
+      const [cx, cy] = candidats[i]!;
+      particules.push({
+        // Les particules naissent a leur place, pas dispersees. Si la boucle
+        // d'animation ne demarre jamais, le premier trace montre deja le logo
+        // et non un nuage de bruit. L'elan initial suffit a produire une mise
+        // en place vivante quand l'animation, elle, tourne.
+        x: cx,
+        y: cy,
+        cx,
+        cy,
+        vx: (Math.random() - 0.5) * 11,
+        vy: (Math.random() - 0.5) * 11,
+        phase: Math.random() * Math.PI * 2,
+        taille: 0.8 + Math.random() * 0.9,
+      });
+    }
+    return particules;
+  }
+
+  async function initConstellation() {
+    const hote = document.querySelector<HTMLElement>('[data-constellation]');
+    if (!hote || hote.dataset.pret === 'oui') return;
+
+    const toile = hote.querySelector<HTMLCanvasElement>('[data-constellation-toile]');
+    const patron = hote.querySelector<SVGSVGElement>('[data-constellation-patron]');
+    if (!toile || !patron) return;
+
+    const pinceau = toile.getContext('2d');
+    if (!pinceau) return;
+
+    const image = await patronVersImage(patron).catch(() => null);
+    if (!image) return;
+
+    hote.dataset.pret = 'oui';
+
+    const moinsDeMouvement = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let particules: Particule[] = [];
+    let densite = 1;
+    let largeur = 0;
+    let hauteur = 0;
+    let accent = couleurAccent();
+
+    const pointeur = { x: -9999, y: -9999, actif: false };
+    const ondes: { x: number; y: number; rayon: number }[] = [];
+
+    function mesurer() {
+      const cadre = hote!.getBoundingClientRect();
+      // Une largeur nulle ou minuscule signifie que la mise en page n'est pas
+      // encore posee : on attend le prochain appel plutot que de semer un nuage
+      // dans un cadre qui n'existe pas.
+      if (cadre.width < 40 || cadre.height < 40) return;
+      if (Math.abs(cadre.width - largeur) < 1 && Math.abs(cadre.height - hauteur) < 1) return;
+
+      densite = Math.min(window.devicePixelRatio || 1, 2);
+      largeur = cadre.width;
+      hauteur = cadre.height;
+      toile!.width = Math.round(largeur * densite);
+      toile!.height = Math.round(hauteur * densite);
+      pinceau!.setTransform(densite, 0, 0, densite, 0, 0);
+
+      const objectif = largeur < 520 ? 420 : largeur < 900 ? 700 : 1000;
+      particules = semerParticules(image!, largeur, hauteur, objectif);
+      accent = couleurAccent();
+      // Un trace immediat : apres un redimensionnement, la zone ne reste jamais
+      // vide, meme si la boucle d'animation ne tourne pas.
+      peindre();
+    }
+
+    function peindre() {
+      pinceau!.clearRect(0, 0, largeur, hauteur);
+
+      // Trois niveaux de luminosite selon la distance au pointeur, dessines en
+      // trois passes : une seule ecriture de style par passe plutot qu'une par
+      // point. Les points proches du doigt s'allument.
+      const groupes: Particule[][] = [[], [], []];
+      for (const p of particules) {
+        const dx = p.x - pointeur.x;
+        const dy = p.y - pointeur.y;
+        const d2 = dx * dx + dy * dy;
+        groupes[d2 < 26000 ? 2 : d2 < 90000 ? 1 : 0]!.push(p);
+      }
+
+      const opacites = [0.34, 0.6, 1];
+      for (let g = 0; g < 3; g++) {
+        const lot = groupes[g]!;
+        if (!lot.length) continue;
+        pinceau!.globalAlpha = opacites[g]!;
+        pinceau!.fillStyle = accent;
+        pinceau!.beginPath();
+        for (const p of lot) {
+          const r = p.taille * (g === 2 ? 1.7 : 1);
+          pinceau!.moveTo(p.x + r, p.y);
+          pinceau!.arc(p.x, p.y, r, 0, Math.PI * 2);
+        }
+        pinceau!.fill();
+      }
+      pinceau!.globalAlpha = 1;
+    }
+
+    // Sans mouvement : on pose le nuage a sa place definitive, une fois.
+    if (moinsDeMouvement.matches) {
+      const poser = () => {
+        mesurer();
+        for (const p of particules) {
+          p.x = p.cx;
+          p.y = p.cy;
+        }
+        peindre();
+      };
+      poser();
+      new ResizeObserver(poser).observe(hote);
+      return;
+    }
+
+    mesurer();
+    peindre();
+
+    let temps = 0;
+    let image_id = 0;
+
+    /**
+     * Visibilite calculee dans la boucle, a partir de la position reelle.
+     *
+     * Un IntersectionObserver serait plus elegant sur le papier, mais il ne se
+     * declenche pas dans certains contextes de rendu, et le nuage resterait
+     * alors invisible pour toujours. Une lecture de rectangle par image coute
+     * quelques microsecondes et ne peut pas tomber en panne.
+     */
+    function dansEcran(): boolean {
+      const cadre = hote!.getBoundingClientRect();
+      return cadre.bottom > -140 && cadre.top < window.innerHeight + 140;
+    }
+
+    function boucle() {
+      if (!dansEcran()) {
+        image_id = requestAnimationFrame(boucle);
+        return;
+      }
+
+      temps += 0.016;
+
+      for (const p of particules) {
+        // Respiration : un flottement lent qui evite le nuage fige.
+        const cible_x = p.cx + Math.sin(temps * 0.7 + p.phase) * 1.4;
+        const cible_y = p.cy + Math.cos(temps * 0.6 + p.phase) * 1.4;
+
+        p.vx += (cible_x - p.x) * RESSORT;
+        p.vy += (cible_y - p.y) * RESSORT;
+
+        if (pointeur.actif) {
+          const dx = p.x - pointeur.x;
+          const dy = p.y - pointeur.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < RAYON_POINTEUR * RAYON_POINTEUR && d2 > 0.01) {
+            const d = Math.sqrt(d2);
+            const force = (1 - d / RAYON_POINTEUR) * FORCE_POINTEUR;
+            p.vx += (dx / d) * force * 0.06;
+            p.vy += (dy / d) * force * 0.06;
+          }
+        }
+
+        for (const onde of ondes) {
+          const dx = p.x - onde.x;
+          const dy = p.y - onde.y;
+          const d = Math.hypot(dx, dy) || 1;
+          const ecart = Math.abs(d - onde.rayon);
+          if (ecart < 34) {
+            const force = (1 - ecart / 34) * FORCE_ONDE * 0.05;
+            p.vx += (dx / d) * force;
+            p.vy += (dy / d) * force;
+          }
+        }
+
+        p.vx *= FRICTION;
+        p.vy *= FRICTION;
+        p.x += p.vx;
+        p.y += p.vy;
+      }
+
+      for (let i = ondes.length - 1; i >= 0; i--) {
+        ondes[i]!.rayon += 11;
+        if (ondes[i]!.rayon > Math.max(largeur, hauteur)) ondes.splice(i, 1);
+      }
+
+      peindre();
+      image_id = requestAnimationFrame(boucle);
+    }
+
+    function demarrer() {
+      if (!image_id) image_id = requestAnimationFrame(boucle);
+    }
+
+    function suspendre() {
+      if (image_id) {
+        cancelAnimationFrame(image_id);
+        image_id = 0;
+      }
+    }
+
+    function positionner(evenement: PointerEvent) {
+      const cadre = hote!.getBoundingClientRect();
+      pointeur.x = evenement.clientX - cadre.left;
+      pointeur.y = evenement.clientY - cadre.top;
+      pointeur.actif = true;
+      hote!.dataset.touche = 'oui';
+    }
+
+    hote.addEventListener('pointermove', positionner);
+    hote.addEventListener('pointerdown', (evenement) => {
+      positionner(evenement);
+      ondes.push({ x: pointeur.x, y: pointeur.y, rayon: 0 });
+    });
+    hote.addEventListener('pointerleave', () => {
+      pointeur.actif = false;
+      pointeur.x = -9999;
+      pointeur.y = -9999;
+    });
+
+    // Onglet en arriere plan : la boucle s'arrete completement. C'est le seul
+    // cas ou il faut vraiment couper, pour la batterie.
+    const surVisibilite = () => (document.hidden ? suspendre() : demarrer());
+    document.addEventListener('visibilitychange', surVisibilite);
+
+    // ResizeObserver et non l'evenement `resize` de la fenetre : la zone change
+    // aussi de taille quand le contenu du pied de page se reagence, sans que la
+    // fenetre bouge. C'est exactement ce qui se passe au premier rendu, pendant
+    // que les images se placent.
+    let minuteurTaille = 0;
+    const observateurTaille = new ResizeObserver(() => {
+      window.clearTimeout(minuteurTaille);
+      minuteurTaille = window.setTimeout(mesurer, 120);
+    });
+    observateurTaille.observe(hote);
+
+    // Le theme change la couleur des points : on la relit a chaque bascule.
+    const observateurTheme = new MutationObserver(() => {
+      accent = couleurAccent();
+    });
+    observateurTheme.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+
+    demarrer();
+
+    arreter = () => {
+      suspendre();
+      observateurTheme.disconnect();
+      observateurTaille.disconnect();
+      window.clearTimeout(minuteurTaille);
+      document.removeEventListener('visibilitychange', surVisibilite);
+      arreter = null;
+    };
+  }
+
+  initConstellation();
+  document.addEventListener('astro:page-load', initConstellation);
+  // Une transition de page remplace le pied de page : la boucle precedente
+  // doit mourir, sinon elle continue de peindre dans un canvas detache.
+  document.addEventListener('astro:before-swap', () => arreter?.());
+</script>

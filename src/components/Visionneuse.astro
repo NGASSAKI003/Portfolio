@@ -1,0 +1,202 @@
+---
+/**
+ * Visionneuse plein ecran.
+ *
+ * Batie sur l'element `dialog` natif : la touche Echap, le piege de focus, le
+ * fond inerte et le retour du focus a l'element d'origine sont fournis par le
+ * navigateur. Reecrire tout cela en JavaScript, c'est se tromper quelque part.
+ *
+ * Une seule visionneuse pour toute la page. Les images cliquables portent
+ * `data-zoom` et les attributs qui vont avec ; un seul ecouteur delegue suffit.
+ */
+---
+
+<dialog class="visionneuse" data-visionneuse aria-labelledby="visionneuse-titre">
+  <h2 class="lecteur-seul" id="visionneuse-titre">Image en plein écran</h2>
+
+  <button
+    type="button"
+    class="visionneuse__fermer"
+    data-visionneuse-fermer
+    aria-label="Fermer l'image"
+  >
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+      <path
+        d="M6 6l12 12M18 6L6 18"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"></path>
+    </svg>
+  </button>
+
+  <figure class="visionneuse__cadre">
+    <img data-visionneuse-image alt="" />
+    <figcaption data-visionneuse-legende></figcaption>
+  </figure>
+</dialog>
+
+<style>
+  .visionneuse {
+    width: min(96vw, 90rem);
+    max-width: none;
+    max-height: 94dvh;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--c-text);
+    overflow: visible;
+  }
+
+  .visionneuse::backdrop {
+    background: rgb(4 5 7 / 0.88);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .visionneuse[open] {
+      animation: visionneuse-entree 0.32s var(--ease-sortie);
+    }
+
+    .visionneuse[open]::backdrop {
+      animation: visionneuse-fond 0.32s var(--ease-sortie);
+    }
+  }
+
+  @keyframes visionneuse-entree {
+    from {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+  }
+
+  @keyframes visionneuse-fond {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .visionneuse__cadre {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    align-items: center;
+  }
+
+  .visionneuse__cadre img {
+    max-width: 100%;
+    max-height: 82dvh;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: var(--radius-card);
+    border: 1px solid var(--c-line-forte);
+    box-shadow: var(--ombre-levee);
+  }
+
+  .visionneuse__cadre figcaption {
+    max-width: 60ch;
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+  }
+
+  .visionneuse__cadre figcaption:empty {
+    display: none;
+  }
+
+  .visionneuse__fermer {
+    position: fixed;
+    top: max(1rem, env(safe-area-inset-top));
+    right: 1rem;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* 48px : atteignable au pouce sans viser. */
+    width: 3rem;
+    height: 3rem;
+    border-radius: var(--radius-pill);
+    color: var(--c-text);
+    background: var(--c-verre);
+    border: 1px solid var(--c-line-forte);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition:
+      background-color 0.25s var(--ease-sortie),
+      transform 0.2s var(--ease-ressort);
+  }
+
+  .visionneuse__fermer:hover {
+    background: var(--c-surface);
+  }
+
+  .visionneuse__fermer:active {
+    transform: scale(0.9);
+  }
+</style>
+
+<script>
+  function initVisionneuse() {
+    const boite = document.querySelector<HTMLDialogElement>('[data-visionneuse]');
+    if (!boite || boite.dataset.pret === 'oui') return;
+    boite.dataset.pret = 'oui';
+
+    const image = boite.querySelector<HTMLImageElement>('[data-visionneuse-image]');
+    const legende = boite.querySelector<HTMLElement>('[data-visionneuse-legende]');
+    const fermeture = boite.querySelector<HTMLButtonElement>('[data-visionneuse-fermer]');
+    if (!image || !legende) return;
+
+    function ouvrir(declencheur: HTMLElement) {
+      const source = declencheur.dataset.zoomSrc;
+      if (!source) return;
+      image!.src = source;
+      image!.alt = declencheur.dataset.zoomAlt ?? '';
+      legende!.textContent = declencheur.dataset.zoomLegende ?? '';
+      boite!.showModal();
+    }
+
+    /**
+     * Fermeture, et liberation de l'image dans la foulee.
+     *
+     * L'evenement `close` du `dialog` serait l'endroit naturel pour faire le
+     * menage, mais il ne se declenche pas dans tous les contextes de rendu.
+     * On ne confie donc rien d'important a un rappel qui peut ne pas venir :
+     * le nettoyage se fait ici, sur le chemin que l'on maitrise.
+     */
+    function fermer() {
+      boite!.close();
+      image!.removeAttribute('src');
+      image!.alt = '';
+      legende!.textContent = '';
+    }
+
+    // Un seul ecouteur pour toute la page, y compris pour les images ajoutees
+    // apres coup par une transition de page.
+    document.addEventListener('click', (evenement) => {
+      const cible = (evenement.target as Element | null)?.closest<HTMLElement>('[data-zoom]');
+      if (cible) ouvrir(cible);
+    });
+
+    fermeture?.addEventListener('click', fermer);
+
+    // Clic hors de l'image : le `dialog` occupe toute la zone, on distingue donc
+    // le fond de la figure elle meme.
+    boite.addEventListener('click', (evenement) => {
+      if (!(evenement.target as Element).closest('.visionneuse__cadre img')) fermer();
+    });
+
+    // Echap est gere par le navigateur. `cancel` precede la fermeture native et
+    // se declenche, lui, de maniere fiable : on en profite pour nettoyer aussi.
+    boite.addEventListener('cancel', () => {
+      image.removeAttribute('src');
+      image.alt = '';
+      legende.textContent = '';
+    });
+  }
+
+  initVisionneuse();
+  document.addEventListener('astro:page-load', initVisionneuse);
+</script>

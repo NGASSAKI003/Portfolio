@@ -1,0 +1,706 @@
+@import 'tailwindcss';
+
+/* Polices reduites au jeu latin francais, generees par
+   scripts/sous-ensembler-polices.py. Voir ce fichier pour les regenerer. */
+@import './polices.css';
+
+/* ==========================================================================
+   1. JETONS SEMANTIQUES
+   Les couleurs ne sont jamais ecrites en dur dans les composants.
+   Chaque jeton a une valeur en theme sombre et une en theme clair.
+   Tous les rapports de contraste notes ci-dessous sont mesures.
+   ========================================================================== */
+
+:root,
+[data-theme='sombre'] {
+  color-scheme: dark;
+
+  --c-bg: #08090a;
+  --c-bg-elev: #0e0f12;
+  --c-surface: #131418;
+  --c-surface-2: #191a1f;
+
+  --c-line: rgb(255 255 255 / 0.08);
+  --c-line-forte: rgb(255 255 255 / 0.16);
+
+  --c-text: #f4f4f5; /* 17.9:1 */
+  --c-text-2: #a8a8ae; /*  8.4:1 */
+  --c-text-3: #7e7e88; /*  4.9:1 */
+
+  --c-accent: #5b8cff; /*  6.3:1 */
+  --c-accent-vif: #7ba3ff;
+  --c-accent-ink: #06070a;
+  --c-accent-doux: rgb(91 140 255 / 0.13);
+  --c-accent-ligne: rgb(91 140 255 / 0.3);
+
+  --c-glow-a: rgb(91 140 255 / 0.15);
+  --c-glow-b: rgb(126 88 255 / 0.1);
+
+  --c-selection: rgb(91 140 255 / 0.28);
+
+  --c-or: #d9a441; /*  8.9:1 */
+  --c-or-fond: rgb(217 164 65 / 0.1);
+  --c-or-ligne: rgb(217 164 65 / 0.32);
+
+  --c-verre: rgb(14 15 18 / 0.72);
+  --grain-opacite: 0.032;
+
+  --ombre-douce: 0 1px 2px rgb(0 0 0 / 0.3);
+  --ombre-carte: 0 2px 4px rgb(0 0 0 / 0.24), 0 12px 32px -12px rgb(0 0 0 / 0.6);
+  --ombre-levee: 0 4px 8px rgb(0 0 0 / 0.28), 0 24px 56px -20px rgb(0 0 0 / 0.72);
+
+  /* Le logo bascule par ces deux arrets de degrade. */
+  --logo-from: #9db6e8;
+  --logo-to: #5b8cff;
+}
+
+[data-theme='clair'] {
+  color-scheme: light;
+
+  --c-bg: #fbfbfa;
+  --c-bg-elev: #ffffff;
+  --c-surface: #ffffff;
+  --c-surface-2: #f3f3f1;
+
+  --c-line: rgb(9 9 11 / 0.1);
+  --c-line-forte: rgb(9 9 11 / 0.19);
+
+  --c-text: #111113; /* 17.8:1 */
+  --c-text-2: #55555c; /*  7.1:1 */
+  --c-text-3: #71717a; /*  4.7:1 */
+
+  --c-accent: #0b3fa8; /*  8.7:1 */
+  --c-accent-vif: #0a3690;
+  --c-accent-ink: #ffffff;
+  --c-accent-doux: rgb(11 63 168 / 0.07);
+  --c-accent-ligne: rgb(11 63 168 / 0.2);
+
+  --c-glow-a: rgb(11 63 168 / 0.07);
+  --c-glow-b: rgb(126 88 255 / 0.05);
+
+  --c-selection: rgb(11 63 168 / 0.18);
+
+  /* L'or du theme sombre tombe a 2,3:1 sur fond clair : il lui faut sa propre valeur. */
+  --c-or: #8a5a06; /*  5.7:1 */
+  --c-or-fond: rgb(138 90 6 / 0.08);
+  --c-or-ligne: rgb(138 90 6 / 0.26);
+
+  --c-verre: rgb(255 255 255 / 0.76);
+  --grain-opacite: 0.02;
+
+  --ombre-douce: 0 1px 2px rgb(9 9 11 / 0.05);
+  --ombre-carte: 0 1px 2px rgb(9 9 11 / 0.05), 0 12px 28px -14px rgb(9 9 11 / 0.16);
+  --ombre-levee: 0 2px 6px rgb(9 9 11 / 0.07), 0 24px 48px -20px rgb(9 9 11 / 0.22);
+
+  --logo-from: #0b3fa8;
+  --logo-to: #06246b;
+}
+
+/* ==========================================================================
+   2. THEME TAILWIND
+   ========================================================================== */
+
+@theme {
+  --color-bg: var(--c-bg);
+  --color-bg-elev: var(--c-bg-elev);
+  --color-surface: var(--c-surface);
+  --color-surface-2: var(--c-surface-2);
+
+  --color-line: var(--c-line);
+  --color-line-forte: var(--c-line-forte);
+
+  --color-ink: var(--c-text);
+  --color-ink-2: var(--c-text-2);
+  --color-ink-3: var(--c-text-3);
+
+  --color-accent: var(--c-accent);
+  --color-accent-vif: var(--c-accent-vif);
+  --color-accent-ink: var(--c-accent-ink);
+  --color-accent-doux: var(--c-accent-doux);
+  --color-accent-ligne: var(--c-accent-ligne);
+
+  /* Le second nom de chaque pile est une police locale recalee sur les memes
+     metriques : le texte ne saute pas quand la vraie police finit d'arriver. */
+  --font-sans: 'Inter', 'Inter repli', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono repli', ui-monospace, monospace;
+
+  /*
+   * Police de titrage. C'est ici, et nulle part ailleurs, qu'il faut intervenir
+   * pour en essayer une autre : tous les titres du site passent par ce jeton.
+   */
+  --font-titre: 'Instrument Serif', 'Instrument Serif repli', ui-serif, Georgia, serif;
+
+  /*
+   * Echelle typographique fluide, calee sur le mobile d'abord.
+   * La borne basse est celle d'un ecran de 320 px, la borne haute celle d'un
+   * grand ecran. Aucun point de rupture n'est necessaire entre les deux.
+   */
+  --text-2xs: clamp(0.7rem, 0.68rem + 0.1vw, 0.75rem);
+  --text-xs: clamp(0.8rem, 0.78rem + 0.1vw, 0.85rem);
+  --text-sm: clamp(0.9rem, 0.87rem + 0.14vw, 0.95rem);
+  --text-base: clamp(1.02rem, 0.98rem + 0.2vw, 1.09rem);
+  --text-lg: clamp(1.16rem, 1.09rem + 0.32vw, 1.3rem);
+  --text-xl: clamp(1.36rem, 1.24rem + 0.52vw, 1.62rem);
+  --text-2xl: clamp(1.62rem, 1.4rem + 0.95vw, 2.15rem);
+  --text-3xl: clamp(2rem, 1.62rem + 1.7vw, 3rem);
+  --text-4xl: clamp(2.45rem, 1.85rem + 2.75vw, 4.05rem);
+  --text-5xl: clamp(2.95rem, 2rem + 4.5vw, 5.6rem);
+  --text-6xl: clamp(3.4rem, 2rem + 6.4vw, 7.2rem);
+
+  /* Sortie franche, sans rebond : le mouvement se sent, il ne se remarque pas. */
+  --ease-sortie: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Ressort discret, reserve aux retours au toucher. */
+  --ease-ressort: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-douce: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --radius-sm: 0.625rem;
+  --radius-card: 1.1rem;
+  --radius-lg: 1.5rem;
+  --radius-pill: 999px;
+}
+
+/* ==========================================================================
+   3. BASE
+   ========================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    min-width: 0;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    scroll-padding-top: 5.5rem;
+    overflow-x: hidden;
+    /* Hauteurs de barres de navigation, lues une seule fois ici. */
+    --barre-haute: 3.75rem;
+    --dock: 4.25rem;
+    --marge-basse: env(safe-area-inset-bottom, 0px);
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.62;
+    font-feature-settings: 'cv05' 1, 'cv08' 1, 'ss03' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    /* Un glissement horizontal ne doit jamais declencher le retour arriere
+       du navigateur au milieu d'une galerie. */
+    overscroll-behavior-x: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-titre);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.022em;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: none;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  img,
+  svg,
+  video {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  ul,
+  ol {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  ::selection {
+    background: var(--c-selection);
+    color: var(--c-text);
+  }
+
+  /* Un anneau de focus unique, visible sur les deux themes,
+     jamais supprime, jamais invisible. */
+  :focus-visible {
+    outline: 2px solid var(--c-accent);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+
+  :focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   4. PRIMITIVES DE MISE EN PAGE
+   ========================================================================== */
+
+@layer components {
+  .shell {
+    width: 100%;
+    max-width: 78rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3rem);
+  }
+
+  .shell-etroit {
+    width: 100%;
+    max-width: 48rem;
+    margin-inline: auto;
+    padding-inline: clamp(1.25rem, 5vw, 3rem);
+  }
+
+  /* Rythme vertical des sections : la respiration du site tient ici. */
+  .section {
+    padding-block: clamp(4rem, 9vw, 8.5rem);
+  }
+
+  .section-serree {
+    padding-block: clamp(2.5rem, 5vw, 4.5rem);
+  }
+
+  /* Etiquette de section, en capitales monospace.
+     Reprend le langage du document de vision One Zone. */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.7em;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+
+  .eyebrow::before {
+    content: '';
+    width: 1.6rem;
+    height: 1px;
+    background: var(--c-line-forte);
+    flex-shrink: 0;
+  }
+
+  .display {
+    font-family: var(--font-titre);
+    font-weight: 400;
+    letter-spacing: -0.015em;
+    line-height: 0.98;
+  }
+
+  .lede {
+    font-size: var(--text-lg);
+    line-height: 1.58;
+    color: var(--c-text-2);
+    max-width: 42ch;
+  }
+
+  .mono-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--c-text-3);
+  }
+
+  /* ---------- Boutons ---------- */
+
+  .bouton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    /* 48px : confortable au pouce, y compris avec une main peu sure. */
+    min-height: 3rem;
+    padding-inline: 1.5rem;
+    border-radius: var(--radius-pill);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    border: 1px solid transparent;
+    transition:
+      background-color 0.3s var(--ease-sortie),
+      border-color 0.3s var(--ease-sortie),
+      color 0.3s var(--ease-sortie),
+      transform 0.18s var(--ease-ressort);
+  }
+
+  /* Retour au toucher : l'element s'enfonce legerement sous le doigt. */
+  .bouton:active {
+    transform: scale(0.97);
+  }
+
+  .bouton--plein {
+    position: relative;
+    overflow: hidden;
+    background: var(--c-accent);
+    color: var(--c-accent-ink);
+    box-shadow: var(--ombre-douce);
+  }
+
+  .bouton--plein:hover {
+    background: var(--c-accent-vif);
+  }
+
+  /*
+   * Un reflet qui balaie le bouton au survol. Il ne deplace rien, contrairement
+   * aux boutons magnetiques a la mode : viser un bouton qui se derobe est une
+   * mauvaise idee pour qui a la main peu sure.
+   */
+  .bouton--plein::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      rgb(255 255 255 / 0.22) 48%,
+      transparent 72%
+    );
+    transform: translateX(-120%);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+    .bouton--plein:hover::before {
+      transition: transform 0.85s var(--ease-sortie);
+      transform: translateX(120%);
+    }
+  }
+
+  .bouton--vide {
+    border-color: var(--c-line-forte);
+    color: var(--c-text-2);
+  }
+
+  .bouton--vide:hover {
+    border-color: var(--c-text-3);
+    color: var(--c-text);
+  }
+
+  .bouton--large {
+    width: 100%;
+  }
+
+  @media (min-width: 30rem) {
+    .bouton--large {
+      width: auto;
+    }
+  }
+
+  /* ---------- Fonds ---------- */
+
+  /*
+   * Aurore : deux halos tres larges qui derivent lentement derriere la page.
+   * Trente-quatre secondes par cycle, assez lent pour etre ressenti sans etre
+   * remarque. Le mouvement se fait en transform, donc sur le compositeur.
+   */
+  .aurore {
+    position: fixed;
+    inset: -25%;
+    z-index: -2;
+    pointer-events: none;
+    background:
+      radial-gradient(36rem 28rem at 22% 14%, var(--c-glow-a), transparent 62%),
+      radial-gradient(30rem 26rem at 80% 32%, var(--c-glow-b), transparent 64%);
+    will-change: transform;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .aurore {
+      animation: deriver 34s var(--ease-douce) infinite alternate;
+    }
+  }
+
+  @keyframes deriver {
+    from {
+      transform: translate3d(-2%, -1%, 0) scale(1);
+    }
+    to {
+      transform: translate3d(3%, 2%, 0) scale(1.09);
+    }
+  }
+
+  /*
+   * Grain : une trame minuscule posee sur toute la page. Invisible en tant que
+   * telle, elle empeche les degrades de baver en bandes sur les ecrans 8 bits
+   * et donne de la matiere a ce qui serait autrement plat.
+   */
+  .grain {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: var(--grain-opacite);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23g)'/%3E%3C/svg%3E");
+  }
+}
+
+/* ==========================================================================
+   5. MOUVEMENT
+   ========================================================================== */
+
+@layer utilities {
+  /*
+   * Revelation a la lecture, entierement en CSS.
+   *
+   * Aucun JavaScript n'intervient : pas d'observateur a initialiser, rien a
+   * desarmer, et surtout aucun scenario ou un script muet laisse la page vide.
+   * La regle est absolue : rien de ce qui compte ne depend du script pour
+   * s'afficher.
+   *
+   * Sur un navigateur sans chronologie de defilement, ou quand le systeme
+   * demande moins d'animation, le bloc entier est ignore et le contenu
+   * s'affiche directement. C'est le comportement par defaut, pas un repli.
+   */
+  @supports (animation-timeline: view()) {
+    @media (prefers-reduced-motion: no-preference) {
+      .reveal {
+        animation: apparaitre linear both;
+        animation-timeline: view();
+        animation-range: entry 2% entry 40%;
+      }
+    }
+  }
+
+  /*
+   * Entree au premier affichage, pour ce qui est deja a l'ecran au chargement.
+   * Animation calee sur le temps et non sur le defilement, avec `both` pour que
+   * l'etat final soit conserve.
+   */
+  @media (prefers-reduced-motion: no-preference) {
+    .entree {
+      animation: apparaitre 0.8s var(--ease-sortie) both;
+      animation-delay: var(--entree-delai, 0ms);
+    }
+  }
+
+  @keyframes apparaitre {
+    from {
+      opacity: 0;
+      transform: translateY(16px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /*
+   * Halo qui suit le pointeur sur les surfaces cliquables.
+   * La position vient d'un script minuscule ; en son absence, le halo reste
+   * centre en haut, ce qui est deja correct. Souris uniquement : sur un ecran
+   * tactile, le doigt masque l'effet et la surcharge ne sert a rien.
+   */
+  .halo {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .halo::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    background: radial-gradient(
+      16rem 16rem at var(--halo-x, 50%) var(--halo-y, 0%),
+      var(--c-accent-doux),
+      transparent 60%
+    );
+    transition: opacity 0.5s var(--ease-sortie);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .halo:hover::after,
+    .halo:focus-within::after {
+      opacity: 1;
+    }
+  }
+
+  /*
+   * Lueur qui parcourt le contour au survol.
+   *
+   * Un degrade conique tourne autour de l'element ; un masque n'en garde que
+   * l'epaisseur du liseré, si bien qu'on voit un point de lumiere faire le tour
+   * du cadre. C'est discret au repos, puisque tout est a zero d'opacite.
+   *
+   * L'angle est declare avec `@property` : sans cette declaration, un navigateur
+   * ne sait pas interpoler une variable personnalisee et la rotation saute d'un
+   * coup au lieu de tourner. La ou `@property` n'existe pas, la lueur reste fixe
+   * plutot que de clignoter.
+   */
+  @property --lueur-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+
+  .lueur {
+    position: relative;
+    isolation: isolate;
+  }
+
+  .lueur::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--lueur-angle),
+      transparent 0deg,
+      var(--c-accent) 34deg,
+      color-mix(in srgb, var(--c-accent) 40%, transparent) 62deg,
+      transparent 116deg
+    );
+    /* Le centre est decoupe : il ne reste que le contour. */
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s var(--ease-sortie);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .lueur:hover::before,
+    .lueur:focus-within::before {
+      opacity: 0.85;
+    }
+  }
+
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .lueur:hover::before,
+    .lueur:focus-within::before {
+      animation: tourner-lueur 2.6s linear infinite;
+    }
+  }
+
+  @keyframes tourner-lueur {
+    to {
+      --lueur-angle: 360deg;
+    }
+  }
+
+  .lien-souligne {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.4s var(--ease-sortie);
+  }
+
+  .lien-souligne:hover,
+  .lien-souligne:focus-visible {
+    background-size: 100% 1px;
+  }
+
+  .balance {
+    text-wrap: balance;
+  }
+
+  /*
+   * Bouton qui enveloppe une image agrandissable.
+   * Il n'ajoute aucune apparence : il rend l'image cliquable au clavier comme a
+   * la souris, et signale au survol qu'il se passera quelque chose.
+   */
+  .zoom {
+    display: block;
+    width: 100%;
+    padding: 0;
+    border-radius: inherit;
+    cursor: zoom-in;
+    position: relative;
+  }
+
+  .zoom::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: rgb(6 7 10 / 0.28);
+    opacity: 0;
+    transition: opacity 0.35s var(--ease-sortie);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .zoom:hover::after {
+      opacity: 1;
+    }
+  }
+
+  .zoom:focus-visible::after {
+    opacity: 1;
+  }
+
+  /* Masque le contenu a l'oeil sans le retirer aux lecteurs d'ecran. */
+  .lecteur-seul {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+}

@@ -1,0 +1,78 @@
+---
+interface Props {
+  chiffres: { valeur: string; libelle: string; source?: string }[];
+  class?: string;
+}
+
+const { chiffres, class: className } = Astro.props;
+
+// Le nombre de colonnes suit le nombre de chiffres : jamais de case orpheline
+// en bout de grille. Au dela de quatre, on repasse a quatre par ligne.
+const colonnes = Math.min(chiffres.length, 4);
+---
+
+{
+  chiffres.length > 0 && (
+    <dl class:list={['chiffres', className]} style={`--colonnes:${colonnes}`}>
+      {chiffres.map((chiffre) => (
+        <div class="chiffres__item reveal">
+          <dt class="chiffres__valeur">{chiffre.valeur}</dt>
+          <dd class="chiffres__libelle">
+            {chiffre.libelle}
+            {chiffre.source && <span class="chiffres__source">{chiffre.source}</span>}
+          </dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
+<style>
+  .chiffres {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1px;
+    margin: 0;
+    background: var(--c-line);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-card);
+    overflow: hidden;
+  }
+
+  .chiffres__item {
+    background: var(--c-bg);
+    padding: clamp(1.1rem, 3.5vw, 1.75rem);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+  }
+
+  .chiffres__valeur {
+    font-family: var(--font-titre);
+    font-size: var(--text-3xl);
+    line-height: 1;
+    color: var(--c-text);
+  }
+
+  .chiffres__libelle {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--c-text-2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .chiffres__source {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--c-text-3);
+    letter-spacing: 0.02em;
+  }
+
+  @media (min-width: 52rem) {
+    .chiffres {
+      grid-template-columns: repeat(var(--colonnes, 4), minmax(0, 1fr));
+    }
+  }
+</style>

@@ -1,0 +1,461 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import CarteProjet from '../components/CarteProjet.astro';
+import JetonTech from '../components/JetonTech.astro';
+import { SITE, SITE_URL } from '../lib/site';
+import {
+  graphe,
+  noeudListeProjets,
+  noeudPage,
+  noeudPersonne,
+  noeudProjet,
+  noeudSiteWeb,
+} from '../lib/jsonld';
+import portraitPrincipal from '../assets/portraits/portrait-principal.jpg';
+import portraitOfficiel from '../assets/portraits/portrait-officiel.jpg';
+
+const projets = (await getCollection('projets')).sort((a, b) => a.data.ordre - b.data.ordre);
+const enVedette = projets.filter((p) => p.data.vedette);
+
+const description =
+  "Développeur full stack à Pointe-Noire, Congo. Créateur de One Zone, la place de marché nationale du Congo. React, TypeScript, Node.js, Flutter, Supabase.";
+
+const jsonLd = graphe([
+  noeudSiteWeb(),
+  noeudPersonne({ complet: true, image: `${SITE_URL}${portraitOfficiel.src}` }),
+  noeudPage({
+    chemin: '/',
+    titre: `${SITE.name}, ${SITE.jobTitle}`,
+    description,
+    type: 'ProfilePage',
+  }),
+  // Les oeuvres sont declarees des la page d'accueil : c'est ce qui relie
+  // une recherche sur le nom a l'ensemble des projets.
+  ...projets.map((projet) =>
+    noeudProjet(
+      {
+        slug: projet.id,
+        titre: projet.data.titre,
+        sousTitre: projet.data.sousTitre,
+        resume: projet.data.resume,
+        annee: projet.data.annee,
+        pile: projet.data.pile,
+        domaines: projet.data.domaines,
+        typeSchema: projet.data.typeSchema,
+      },
+      false,
+    ),
+  ),
+  noeudListeProjets(projets.map((p) => ({ slug: p.id, titre: p.data.titre }))),
+]);
+
+const savoirFaire = [
+  {
+    numero: '01',
+    titre: 'Interfaces web',
+    texte:
+      "React, Next.js et Astro. Des interfaces qui se chargent vite, qui restent lisibles au clavier et qui tiennent de 320 pixels à un grand écran.",
+    outils: ['React 19', 'Next.js', 'Astro', 'TypeScript', 'Tailwind CSS'],
+  },
+  {
+    numero: '02',
+    titre: 'API et données',
+    texte:
+      "Node.js et Express au dessus de PostgreSQL, MySQL ou MongoDB. Des routes documentées, une validation stricte à l'entrée, et les règles d'accès posées au plus près de la donnée.",
+    outils: ['Node.js', 'Express', 'PostgreSQL', 'Supabase', 'MongoDB'],
+  },
+  {
+    numero: '03',
+    titre: 'Mobile',
+    texte:
+      "Flutter et React Native, ou l'application web installable quand elle sert mieux l'utilisateur. Le choix se fait sur le terrain visé, pas sur la mode.",
+    outils: ['Flutter', 'React Native', 'PWA', 'Dart'],
+  },
+  {
+    numero: '04',
+    titre: 'IA appliquée',
+    texte:
+      "Intégration de modèles dans des produits réels : assistants vocaux, automatisations, traitement du langage. Avec un mode dégradé quand le réseau lâche.",
+    outils: ['Reconnaissance vocale', 'Synthèse vocale', 'Automatisations'],
+  },
+];
+---
+
+<Base
+  titre={`${SITE.name}, ${SITE.jobTitle} à Pointe-Noire`}
+  {description}
+  chemin="/"
+  image="/og/defaut.png"
+  typeOG="profile"
+  {jsonLd}
+>
+  <section class="heros">
+    <div class="shell heros__grille">
+      <div class="heros__texte">
+        <p class="eyebrow entree">{SITE.city}, {SITE.countryName}</p>
+
+        <h1 class="heros__titre entree" style="--entree-delai:80ms">
+          <span class="heros__prenom">Anaclet Julien</span>
+          <span class="heros__nom">NGASSAKI-NDZA</span>
+        </h1>
+
+        <p class="heros__accroche entree" style="--entree-delai:160ms">
+          Développeur full stack. Je construis des produits qui tiennent en production,
+          pas des maquettes : <a class="heros__lien" href="/projets/one-zone">One Zone</a>,
+          la place de marché nationale du Congo, des applications mobiles, des API et
+          des systèmes connectés.
+        </p>
+
+        <div class="heros__actions entree" style="--entree-delai:240ms">
+          <a class="bouton bouton--plein bouton--large" href="/projets">Voir les projets</a>
+          <a class="bouton bouton--vide bouton--large" href="/contact">Me contacter</a>
+        </div>
+
+        <p class="heros__dispo entree" style="--entree-delai:300ms">
+          Disponible immédiatement, sur site ou à distance
+        </p>
+      </div>
+
+      <div class="heros__portrait entree" style="--entree-delai:120ms">
+        <Image
+          src={portraitPrincipal}
+          alt={`Portrait de ${SITE.name}, développeur full stack à Pointe-Noire`}
+          widths={[360, 540, 760]}
+          sizes="(min-width: 64rem) 23rem, (min-width: 44rem) 36vw, 92vw"
+          loading="eager"
+          fetchpriority="high"
+        />
+      </div>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="titre-projets">
+    <div class="shell">
+      <header class="entete-section reveal">
+        <p class="eyebrow">01 · Travaux</p>
+        <h2 class="display entete-section__titre" id="titre-projets">Ce que j'ai construit</h2>
+        <p class="lede">
+          Deux projets documentés du problème de départ jusqu'aux arbitrages
+          techniques, captures d'écran à l'appui.
+        </p>
+      </header>
+
+      <div class="projets-mis-en-avant">
+        {
+          enVedette.map((projet, index) => (
+            <CarteProjet
+              projet={projet}
+              taille={index === 0 ? 'grande' : 'normale'}
+              prioritaire={index === 0}
+            />
+          ))
+        }
+      </div>
+
+      <a class="lien-suite reveal" href="/projets">
+        Tous les projets
+        <svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true">
+          <path
+            d="M2.5 8h11M9 3.5 13.5 8 9 12.5"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            stroke-linejoin="round"></path>
+        </svg>
+      </a>
+    </div>
+  </section>
+
+  <section class="section section--surface" aria-labelledby="titre-savoir-faire">
+    <div class="shell">
+      <header class="entete-section reveal">
+        <p class="eyebrow">02 · Compétences</p>
+        <h2 class="display entete-section__titre" id="titre-savoir-faire">
+          Ce que je sais faire
+        </h2>
+        <p class="lede">
+          Quatre domaines, et la même exigence dans chacun : que ça marche sur le
+          terrain visé.
+        </p>
+      </header>
+
+      <ul class="savoir-faire">
+        {
+          savoirFaire.map((bloc) => (
+            <li class="savoir-faire__item halo lueur reveal">
+              <span class="savoir-faire__numero">{bloc.numero}</span>
+              <h3 class="savoir-faire__titre">{bloc.titre}</h3>
+              <p class="savoir-faire__texte">{bloc.texte}</p>
+              <ul class="savoir-faire__outils">
+                {bloc.outils.map((outil) => (
+                  <li>
+                    <JetonTech nom={outil} />
+                  </li>
+                ))}
+              </ul>
+            </li>
+          ))
+        }
+      </ul>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="titre-appel">
+    <div class="shell">
+      <div class="appel halo lueur reveal">
+        <p class="eyebrow">03 · Suite</p>
+        <h2 class="display appel__titre" id="titre-appel">Un poste, un stage ou un projet ?</h2>
+        <p class="appel__texte">
+          Je termine ma licence en génie informatique et je suis disponible
+          immédiatement, à Pointe-Noire comme à distance. Écrivez-moi, je réponds.
+        </p>
+        <div class="appel__actions">
+          <a class="bouton bouton--plein bouton--large" href="/contact">Me contacter</a>
+          <a class="bouton bouton--vide bouton--large" href={`mailto:${SITE.email}`}>
+            {SITE.email}
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  /* ---------- Héros ---------- */
+
+  .heros {
+    padding-block: clamp(2.5rem, 7vw, 5.5rem) clamp(3rem, 7vw, 5rem);
+  }
+
+  .heros__grille {
+    display: grid;
+    gap: clamp(2.25rem, 6vw, 4rem);
+    align-items: center;
+  }
+
+  .heros__titre {
+    display: flex;
+    flex-direction: column;
+    margin-block: 1.25rem 0;
+    font-family: var(--font-titre);
+    font-size: var(--text-5xl);
+    line-height: 0.92;
+    letter-spacing: -0.022em;
+  }
+
+  .heros__prenom {
+    color: var(--c-text-2);
+  }
+
+  .heros__nom {
+    color: var(--c-text);
+  }
+
+  .heros__accroche {
+    margin-top: 1.4rem;
+    max-width: 46ch;
+    font-size: var(--text-lg);
+    color: var(--c-text-2);
+  }
+
+  .heros__lien {
+    color: var(--c-text);
+    font-weight: 500;
+    box-shadow: inset 0 -1px 0 0 var(--c-accent-ligne);
+    transition: box-shadow 0.3s var(--ease-sortie);
+  }
+
+  .heros__lien:hover {
+    box-shadow: inset 0 -2px 0 0 var(--c-accent);
+  }
+
+  .heros__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 1.9rem;
+  }
+
+  @media (min-width: 30rem) {
+    .heros__actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* Ni voyant colore, ni trait : la couleur d'accent sur le texte suffit a le
+     distinguer du reste. */
+  .heros__dispo {
+    display: inline-block;
+    margin-top: 1.6rem;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: 0.05em;
+    color: var(--c-accent);
+  }
+
+  .heros__portrait {
+    position: relative;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    border: 1px solid var(--c-line);
+    box-shadow: var(--ombre-levee);
+  }
+
+  .heros__portrait :global(img) {
+    width: 100%;
+    /* Cadrage plus large sur telephone, plus vertical sur grand ecran. */
+    aspect-ratio: 3 / 2;
+    object-fit: cover;
+    object-position: center 22%;
+  }
+
+  /* ---------- Sections ---------- */
+
+  .section--surface {
+    background: var(--c-bg-elev);
+    border-block: 1px solid var(--c-line);
+  }
+
+  .entete-section {
+    max-width: 44rem;
+    margin-bottom: clamp(2rem, 5vw, 3.25rem);
+  }
+
+  .entete-section__titre {
+    margin-block: 1rem 0.85rem;
+    font-size: var(--text-4xl);
+  }
+
+  .projets-mis-en-avant {
+    display: grid;
+    gap: clamp(1rem, 2.5vw, 1.5rem);
+  }
+
+  .lien-suite {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.75rem;
+    min-height: 2.75rem;
+    padding-block: 0.35rem;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--c-accent);
+  }
+
+  .lien-suite svg {
+    transition: transform 0.4s var(--ease-sortie);
+  }
+
+  .lien-suite:hover svg {
+    transform: translateX(4px);
+  }
+
+  /* ---------- Savoir faire ---------- */
+
+  .savoir-faire {
+    display: grid;
+    gap: clamp(1.25rem, 3vw, 1.5rem);
+  }
+
+  .savoir-faire__item {
+    padding: clamp(1.35rem, 4vw, 2rem);
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-card);
+    background: var(--c-bg);
+  }
+
+  .savoir-faire__numero {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    color: var(--c-accent);
+    margin-bottom: 0.85rem;
+  }
+
+  .savoir-faire__titre {
+    font-family: var(--font-titre);
+    font-size: var(--text-xl);
+    margin-bottom: 0.6rem;
+  }
+
+  .savoir-faire__texte {
+    color: var(--c-text-2);
+    font-size: var(--text-sm);
+    max-width: 52ch;
+  }
+
+  .savoir-faire__outils {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 1rem;
+  }
+
+  /* ---------- Appel ---------- */
+
+  .appel {
+    border: 1px solid var(--c-line);
+    border-radius: var(--radius-lg);
+    background:
+      radial-gradient(28rem 18rem at 8% 0%, var(--c-glow-a) 0%, transparent 62%),
+      var(--c-bg-elev);
+    padding: clamp(1.75rem, 6vw, 4rem);
+    box-shadow: var(--ombre-carte);
+  }
+
+  .appel__titre {
+    margin-block: 1rem 0.85rem;
+    font-size: var(--text-4xl);
+    max-width: 16ch;
+  }
+
+  .appel__texte {
+    color: var(--c-text-2);
+    max-width: 50ch;
+  }
+
+  .appel__actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: 1.9rem;
+  }
+
+  @media (min-width: 30rem) {
+    .appel__actions {
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+
+  /* ---------- Adaptations ---------- */
+
+  @media (min-width: 44rem) {
+    .savoir-faire {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 64rem) {
+    .heros__grille {
+      grid-template-columns: 1.45fr 1fr;
+    }
+
+    .heros__portrait {
+      justify-self: end;
+      max-width: 23rem;
+    }
+
+    .heros__portrait :global(img) {
+      aspect-ratio: 4 / 5;
+      object-position: center 18%;
+    }
+  }
+</style>
