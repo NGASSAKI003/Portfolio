@@ -579,64 +579,89 @@
   }
 
   /*
-   * Lueur du contour au survol.
+   * Lueur qui parcourt le contour au survol.
    *
-   * Un liseré lumineux apparait sur le bord, puis respire lentement.
+   * Un degrade conique tourne autour de l'element ; un masque n'en garde que
+   * l'epaisseur du lisere, si bien qu'on voit un point de lumiere faire le tour
+   * du cadre. Tout est a zero d'opacite au repos.
    *
-   * La premiere version faisait tourner un degrade conique dont un masque ne
-   * gardait que l'epaisseur du bord. Elle reposait sur trois choses fragiles a
-   * la fois : `mask-composite`, `@property`, et surtout le fait que Gecko
-   * traite `-webkit-mask` comme un alias de `mask`. Cette propriete raccourcie
-   * reinitialisait `mask-composite` a `add`, les deux couches de masque
-   * s'additionnaient au lieu de se soustraire, le decoupage du centre
-   * disparaissait et le degrade s'etalait sur toute la carte, comme le faisceau
-   * d'un radar.
+   * L'ORDRE DES DECLARATIONS EST LE POINT DELICAT, ne pas le reorganiser.
    *
-   * Cette version n'emploie que des proprietes universelles : `box-shadow`,
-   * `opacity` et une animation d'opacite. Meme rendu sur les trois moteurs.
+   * Gecko traite `-webkit-mask` comme un alias de `mask`. Comme c'est une
+   * propriete raccourcie, elle reinitialise `mask-composite` a `add`. Placee
+   * apres, elle annulait donc le decoupage du centre, les deux couches de
+   * masque s'additionnaient, et le degrade s'etalait sur toute la carte au lieu
+   * de rester sur le bord.
+   *
+   * La regle qui rend le resultat identique sur les trois moteurs : les deux
+   * proprietes raccourcies d'abord, les deux proprietes longues ensuite. Ainsi
+   * aucune raccourcie ne peut plus effacer un `composite` deja pose.
+   *   Gecko          `mask-composite: exclude` s'applique, la version prefixee
+   *                  porte une valeur invalide pour lui et est ignoree.
+   *   WebKit, Blink  les deux s'appliquent et disent la meme chose.
+   *   Versions plus anciennes de Blink et WebKit  seule la version prefixee
+   *                  est comprise, et elle arrive en dernier.
    */
+  @property --lueur-angle {
+    syntax: '<angle>';
+    inherits: false;
+    initial-value: 0deg;
+  }
+
   .lueur {
     position: relative;
+    isolation: isolate;
   }
 
   .lueur::before {
     content: '';
     position: absolute;
     inset: 0;
+    z-index: 2;
     border-radius: inherit;
-    pointer-events: none;
+    padding: 1px;
+    /* Valeur de repli sur l'angle : sans `@property`, la variable n'existe pas,
+       la fonction devient invalide et toute la declaration serait abandonnee.
+       Avec le repli, le lisere s'affiche sans tourner plutot que de disparaitre. */
+    background: conic-gradient(
+      from var(--lueur-angle, 0deg),
+      transparent 0deg,
+      var(--c-accent) 34deg,
+      var(--c-accent-ligne) 62deg,
+      transparent 116deg
+    );
+    /* Les deux raccourcies. */
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    -webkit-mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    /* Puis les deux longues, qui decoupent le centre. */
+    mask-composite: exclude;
+    -webkit-mask-composite: xor;
     opacity: 0;
-    transition: opacity 0.45s var(--ease-sortie);
-    box-shadow:
-      inset 0 0 0 1px var(--c-accent-ligne),
-      inset 0 0 26px -12px var(--c-accent);
+    pointer-events: none;
+    transition: opacity 0.5s var(--ease-sortie);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .lueur:hover::before,
     .lueur:focus-within::before {
-      opacity: 1;
+      opacity: 0.85;
     }
   }
 
-  /*
-   * La respiration demarre apres la transition d'apparition, et part de la
-   * pleine opacite : sans ce decalage, l'animation prendrait la main
-   * immediatement et l'on verrait un saut au lieu d'un fondu.
-   */
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .lueur:hover::before,
     .lueur:focus-within::before {
-      animation: respirer-lueur 3.2s var(--ease-douce) 0.45s infinite alternate;
+      animation: tourner-lueur 2.6s linear infinite;
     }
   }
 
-  @keyframes respirer-lueur {
-    from {
-      opacity: 1;
-    }
+  @keyframes tourner-lueur {
     to {
-      opacity: 0.48;
+      --lueur-angle: 360deg;
     }
   }
 
