@@ -579,77 +579,64 @@
   }
 
   /*
-   * Lueur qui parcourt le contour au survol.
+   * Lueur du contour au survol.
    *
-   * Un degrade conique tourne autour de l'element ; un masque n'en garde que
-   * l'epaisseur du liseré, si bien qu'on voit un point de lumiere faire le tour
-   * du cadre. C'est discret au repos, puisque tout est a zero d'opacite.
+   * Un liseré lumineux apparait sur le bord, puis respire lentement.
    *
-   * L'angle est declare avec `@property` : sans cette declaration, un navigateur
-   * ne sait pas interpoler une variable personnalisee et la rotation saute d'un
-   * coup au lieu de tourner. La ou `@property` n'existe pas, la lueur reste fixe
-   * plutot que de clignoter.
+   * La premiere version faisait tourner un degrade conique dont un masque ne
+   * gardait que l'epaisseur du bord. Elle reposait sur trois choses fragiles a
+   * la fois : `mask-composite`, `@property`, et surtout le fait que Gecko
+   * traite `-webkit-mask` comme un alias de `mask`. Cette propriete raccourcie
+   * reinitialisait `mask-composite` a `add`, les deux couches de masque
+   * s'additionnaient au lieu de se soustraire, le decoupage du centre
+   * disparaissait et le degrade s'etalait sur toute la carte, comme le faisceau
+   * d'un radar.
+   *
+   * Cette version n'emploie que des proprietes universelles : `box-shadow`,
+   * `opacity` et une animation d'opacite. Meme rendu sur les trois moteurs.
    */
-  @property --lueur-angle {
-    syntax: '<angle>';
-    inherits: false;
-    initial-value: 0deg;
-  }
-
   .lueur {
     position: relative;
-    isolation: isolate;
   }
 
   .lueur::before {
     content: '';
     position: absolute;
     inset: 0;
-    z-index: 2;
     border-radius: inherit;
-    padding: 1px;
-    /* La valeur de repli compte : sans prise en charge de `@property`, la
-       variable n'existe pas, la fonction devient invalide et toute la
-       declaration serait abandonnee. Avec le repli, la lueur s'affiche
-       simplement sans tourner. */
-    background: conic-gradient(
-      from var(--lueur-angle, 0deg),
-      transparent 0deg,
-      var(--c-accent) 34deg,
-      color-mix(in srgb, var(--c-accent) 40%, transparent) 62deg,
-      transparent 116deg
-    );
-    /* Le centre est decoupe : il ne reste que le contour. */
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    opacity: 0;
     pointer-events: none;
-    transition: opacity 0.5s var(--ease-sortie);
+    opacity: 0;
+    transition: opacity 0.45s var(--ease-sortie);
+    box-shadow:
+      inset 0 0 0 1px var(--c-accent-ligne),
+      inset 0 0 26px -12px var(--c-accent);
   }
 
   @media (hover: hover) and (pointer: fine) {
     .lueur:hover::before,
     .lueur:focus-within::before {
-      opacity: 0.85;
+      opacity: 1;
     }
   }
 
+  /*
+   * La respiration demarre apres la transition d'apparition, et part de la
+   * pleine opacite : sans ce decalage, l'animation prendrait la main
+   * immediatement et l'on verrait un saut au lieu d'un fondu.
+   */
   @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
     .lueur:hover::before,
     .lueur:focus-within::before {
-      animation: tourner-lueur 2.6s linear infinite;
+      animation: respirer-lueur 3.2s var(--ease-douce) 0.45s infinite alternate;
     }
   }
 
-  @keyframes tourner-lueur {
+  @keyframes respirer-lueur {
+    from {
+      opacity: 1;
+    }
     to {
-      --lueur-angle: 360deg;
+      opacity: 0.48;
     }
   }
 

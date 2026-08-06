@@ -103,6 +103,83 @@ pip install vtracer pillow svglib rlPyCairo fonttools brotli
 
 Chaque `git push` redéploie.
 
+## Mettre le site à jour, une fois qu'il est en ligne
+
+Le premier déploiement est décrit dans [A-FAIRE.md](A-FAIRE.md). Après, tout
+passe par Git : Cloudflare surveille le dépôt et redéploie à chaque poussée sur
+la branche principale.
+
+### La routine, à chaque changement
+
+```bash
+npm run check
+```
+
+```bash
+npm run build
+```
+
+```bash
+npm run preview
+```
+
+Ouvre `localhost:4322`, vérifie ce que tu viens de changer. Si c'est bon :
+
+```bash
+git add -A
+```
+
+```bash
+git commit -m "Décris ce qui change et pourquoi"
+```
+
+```bash
+git push
+```
+
+Cloudflare démarre le déploiement dans les secondes qui suivent et le termine en
+deux à trois minutes. Tu peux suivre l'avancement dans **Workers & Pages**, ton
+projet, onglet **Deployments**.
+
+> `npm run build` avant de pousser n'est pas une formalité. Cloudflare exécute la
+> même commande sur ses serveurs : si elle échoue chez toi, elle échouera chez
+> eux, et le site restera sur l'ancienne version sans que rien ne te prévienne.
+
+### Quand tu changes une image source
+
+Les scripts de `scripts/` ne tournent pas au build. Si tu remplaces un logo, une
+capture ou un certificat dans `_sources/`, relance le script concerné avant de
+construire, sinon le site continuera d'afficher l'ancienne version.
+
+```bash
+python scripts/preparer-captures.py
+```
+
+```bash
+python scripts/generer-visuels.py
+```
+
+### Si tu ne vois pas ton changement
+
+Dans cet ordre, en s'arrêtant dès que ça marche.
+
+1. Recharge en forçant : **Ctrl+Maj+R**.
+2. Purge les caches locaux, puis reconstruis.
+
+```bash
+rm -rf .astro node_modules/.astro dist
+```
+
+3. Purge le cache de Cloudflare : tableau de bord, ton projet, **Settings**,
+   section **Caching**, bouton **Purge everything**.
+
+### Revenir en arrière
+
+Un déploiement raté se répare sans toucher au code. Dans **Deployments**, ouvre
+le dernier déploiement qui fonctionnait et clique sur **Rollback to this
+deployment**. Le site revient à cet état en quelques secondes. Corrige ensuite
+tranquillement, et repousse.
+
 ## Ce que le code ne peut pas faire
 
 Un site techniquement irréprochable qui ne reçoit aucun lien entrant reste

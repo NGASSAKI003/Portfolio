@@ -151,11 +151,77 @@ const props = Astro.props;
         );
       }
 
+      /**
+       * Barres qui s'effacent au defilement.
+       *
+       * La barre haute et la barre inferieure obeissent au meme geste : elles
+       * disparaissent quand on descend, elles reviennent des qu'on remonte.
+       * La logique est commune, sinon les deux se decaleraient.
+       *
+       * Deux seuils distincts evitent le clignotement. Il faut avoir depasse
+       * SEUIL_MASQUAGE pour qu'elles puissent disparaitre, sinon elles
+       * sauteraient des le premier pixel. Et il faut un mouvement d'au moins
+       * TOLERANCE pixels pour changer d'avis, sinon le tremblement d'un doigt
+       * sur un ecran tactile les ferait osciller.
+       *
+       * Le calcul est en JavaScript a dessein : `animation-timeline: scroll()`
+       * ferait la meme chose sans script, mais Gecko ne le livre pas encore, et
+       * la barre haute y resterait transparente par dessus le contenu.
+       */
+      const SEUIL_POSE = 8;
+      const SEUIL_MASQUAGE = 140;
+      const TOLERANCE = 6;
+
+      function initBarres() {
+        const entete = document.querySelector<HTMLElement>('[data-entete]');
+        const dock = document.querySelector<HTMLElement>('[data-dock]');
+        const barres = [entete, dock].filter(Boolean) as HTMLElement[];
+        if (!barres.length || document.body.dataset.barresPretes === 'oui') return;
+        document.body.dataset.barresPretes = 'oui';
+
+        let precedent = Math.max(0, window.scrollY);
+
+        const poser = (cache: boolean) => {
+          for (const barre of barres) {
+            // Une barre dont un element a le focus reste en place : le clavier
+            // enverrait sinon l'utilisateur sur une cible sortie de l'ecran.
+            if (cache && barre.contains(document.activeElement)) continue;
+            barre.dataset.cache = cache ? 'oui' : 'non';
+          }
+        };
+
+        function surDefilement() {
+          const actuel = Math.max(0, window.scrollY);
+          if (entete) entete.dataset.defile = actuel > SEUIL_POSE ? 'oui' : 'non';
+
+          const ecart = actuel - precedent;
+          if (Math.abs(ecart) < TOLERANCE) return;
+
+          if (ecart > 0 && actuel > SEUIL_MASQUAGE) poser(true);
+          else if (ecart < 0) poser(false);
+
+          precedent = actuel;
+        }
+
+        surDefilement();
+        window.addEventListener('scroll', surDefilement, { passive: true });
+
+        // Une transition de page conserve la position de defilement de la page
+        // precedente : on repart d'un etat propre, barres visibles.
+        document.addEventListener('astro:after-swap', () => {
+          precedent = Math.max(0, window.scrollY);
+          poser(false);
+          surDefilement();
+        });
+      }
+
       initBasculeTheme();
       initHalo();
+      initBarres();
       document.addEventListener('astro:page-load', () => {
         initBasculeTheme();
         initHalo();
+        initBarres();
       });
     </script>
   </body>

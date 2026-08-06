@@ -252,64 +252,8 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(`${href}
   }
 </style>
 
-<script>
-  /**
-   * Etat de la barre haute selon le defilement.
-   *
-   * Deux seuils distincts evitent le clignotement. Il faut avoir depasse
-   * `SEUIL_MASQUAGE` pour que la barre puisse disparaitre, sinon elle sauterait
-   * des le premier pixel. Et il faut un mouvement d'au moins `TOLERANCE` pixels
-   * pour changer d'avis, sinon le tremblement d'un doigt sur un ecran tactile
-   * la ferait osciller.
-   *
-   * Le calcul est deliberement en JavaScript : `animation-timeline: scroll()`
-   * ferait la meme chose sans script, mais Gecko ne le livre pas encore, et la
-   * barre y resterait transparente par dessus le contenu.
-   */
-  const SEUIL_POSE = 8;
-  const SEUIL_MASQUAGE = 140;
-  const TOLERANCE = 6;
-
-  function initEntete() {
-    const entete = document.querySelector<HTMLElement>('[data-entete]');
-    if (!entete || entete.dataset.pret === 'oui') return;
-    entete.dataset.pret = 'oui';
-
-    let precedent = window.scrollY;
-
-    function surDefilement() {
-      const actuel = Math.max(0, window.scrollY);
-
-      entete!.dataset.defile = actuel > SEUIL_POSE ? 'oui' : 'non';
-
-      const ecart = actuel - precedent;
-      if (Math.abs(ecart) < TOLERANCE) return;
-
-      // On ne masque jamais tant qu'un element de la barre a le focus : le
-      // clavier enverrait l'utilisateur sur une cible sortie de l'ecran.
-      const focusDansLaBarre = entete!.contains(document.activeElement);
-
-      if (ecart > 0 && actuel > SEUIL_MASQUAGE && !focusDansLaBarre) {
-        entete!.dataset.cache = 'oui';
-      } else if (ecart < 0) {
-        entete!.dataset.cache = 'non';
-      }
-
-      precedent = actuel;
-    }
-
-    surDefilement();
-    window.addEventListener('scroll', surDefilement, { passive: true });
-
-    // Une navigation par transition de page conserve la position de defilement
-    // de la page precedente : on repart d'un etat propre.
-    document.addEventListener('astro:after-swap', () => {
-      precedent = window.scrollY;
-      entete!.dataset.cache = 'non';
-      surDefilement();
-    });
-  }
-
-  initEntete();
-  document.addEventListener('astro:page-load', initEntete);
-</script>
+<!--
+  L'etat de cette barre selon le defilement est pilote depuis le gabarit
+  (voir Base.astro), qui commande aussi la barre inferieure : les deux doivent
+  se masquer et revenir ensemble, donc la logique leur est commune.
+-->

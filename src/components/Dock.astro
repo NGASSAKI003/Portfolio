@@ -22,7 +22,7 @@ const entrees = [
 ] as const;
 ---
 
-<nav class="dock" aria-label="Navigation principale">
+<nav class="dock" data-dock aria-label="Navigation principale">
   <ul>
     {
       entrees.map((entree) => {
@@ -82,6 +82,29 @@ const entrees = [
     border-top: 1px solid var(--c-line);
     /* La barre s'arrete au dessus de la barre d'accueil des iPhone. */
     padding-bottom: var(--marge-basse);
+    transition: transform 0.42s var(--ease-sortie);
+  }
+
+  /*
+   * Elle s'efface en descendant, comme la barre haute, et revient des qu'on
+   * remonte. L'etat est pose depuis le gabarit, qui commande les deux barres
+   * ensemble.
+   */
+  .dock[data-cache='oui'] {
+    transform: translateY(100%);
+  }
+
+  /* Deux exceptions, identiques a celles de la barre haute : un element qui a
+     le focus ne doit pas sortir de l'ecran, et le mouvement se coupe si le
+     systeme le demande. */
+  .dock:focus-within {
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock[data-cache='oui'] {
+      transform: none;
+    }
   }
 
   .dock ul {
