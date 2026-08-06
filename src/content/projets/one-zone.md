@@ -28,8 +28,8 @@ domaines:
 lienDemo: 'https://onezonecg.pages.dev'
 couverture: ../../assets/captures/one-zone-cle.png
 couvertureAlt: >-
-  Le logo de One Zone, un monogramme 1Z bleu, à côté de deux écrans de téléphone
-  montrant le catalogue et le formulaire de publication d'annonce
+  Le logo de One Zone, un monogramme 1Z en dégradé violet et cyan, à côté de deux
+  écrans de téléphone montrant le catalogue et le formulaire de publication
 galerie:
   - image: ../../assets/captures/one-zone-accueil.png
     alt: >-

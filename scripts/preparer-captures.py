@@ -39,7 +39,10 @@ ECRANS = [
 COUVERTURE_ECRANS = ["accueil", "publier"]
 
 # Logo de l'application, variante destinee aux fonds sombres.
-LOGO_OZ = RACINE / "_sources" / "logo-oz-version-sombre.png"
+LOGO_OZ = RACINE / "_sources" / "logo-zone-version-sombre.png"
+# Hauteur voulue pour la marque sur la couverture. La largeur suit le rapport
+# d'origine : le logo n'est pas carre, le forcer dans un carre le deformerait.
+LOGO_OZ_HAUTEUR = 470
 
 FOND = (8, 9, 10)
 ACCENT = (91, 140, 255)
@@ -144,20 +147,24 @@ def composer_couverture(ecrans: dict[str, Image.Image]) -> Image.Image:
 
     # ---- La marque, a gauche ----
     if LOGO_OZ.exists():
-        cote = 430
-        marque = Image.open(LOGO_OZ).convert("RGBA").resize((cote, cote), Image.LANCZOS)
+        source = Image.open(LOGO_OZ).convert("RGBA")
+        facteur = LOGO_OZ_HAUTEUR / source.size[1]
+        dimensions = (round(source.size[0] * facteur), LOGO_OZ_HAUTEUR)
+        marque = source.resize(dimensions, Image.LANCZOS)
 
         # Halo derriere la marque. Le masque est pose sur une toile plus grande,
         # sinon le flou serait coupe net au bord et laisserait un rectangle.
         marge = 80
-        grand = Image.new("L", (cote + marge * 2, cote + marge * 2), 0)
+        grand = Image.new("L", (dimensions[0] + marge * 2, dimensions[1] + marge * 2), 0)
         grand.paste(marque.getchannel("A"), (marge, marge))
         voile = grand.filter(ImageFilter.GaussianBlur(34)).point(lambda v: int(v * 0.4))
         lueur = Image.new("RGBA", grand.size, (*ACCENT, 0))
         lueur.putalpha(voile)
 
-        mx = 150
-        my = (taille[1] - cote) // 2 - 20
+        # Centre dans l'espace laisse libre a gauche des telephones.
+        libre = positions[0][0] if positions else taille[0]
+        mx = max(60, (libre - dimensions[0]) // 2)
+        my = (taille[1] - dimensions[1]) // 2 - 20
         toile.alpha_composite(lueur, (mx - marge, my - marge))
         toile.alpha_composite(marque, (mx, my))
 
