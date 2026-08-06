@@ -1,0 +1,32 @@
+# Fins de ligne
+#
+# Tout le texte est stocke en LF dans le depot et ecrit en LF dans le
+# repertoire de travail, y compris sous Windows. Sans cette regle, un aller
+# retour entre deux machines produit des differences sur des fichiers entiers
+# dont pas une ligne n'a change, et les revues deviennent illisibles.
+* text=auto eol=lf
+
+# Fichiers binaires
+#
+# `binary` coupe a la fois la conversion de fins de ligne, le calcul de
+# differences et la tentative de fusion. Sans cela, Git essaierait de traiter
+# une image comme du texte le jour d'un conflit, et la corromprait.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.avif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+
+# Fichiers generes
+#
+# Ils sont versionnes parce que le site en depend au build, mais ils ne sont
+# pas ecrits a la main. GitHub les replie dans les differences et les exclut
+# des statistiques de langage du depot.
+src/components/logo-path.ts linguist-generated=true
+src/styles/polices.css linguist-generated=true
+package-lock.json linguist-generated=true
