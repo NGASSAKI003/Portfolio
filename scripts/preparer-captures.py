@@ -42,7 +42,13 @@ COUVERTURE_ECRANS = ["accueil", "publier"]
 LOGO_OZ = RACINE / "_sources" / "logo-zone-version-sombre.png"
 # Hauteur voulue pour la marque sur la couverture. La largeur suit le rapport
 # d'origine : le logo n'est pas carre, le forcer dans un carre le deformerait.
-LOGO_OZ_HAUTEUR = 470
+LOGO_OZ_HAUTEUR = 660
+
+# Les deux teintes dominantes du logo, relevees dans le fichier source. Le halo
+# les reprend plutot que d'employer le bleu du site : une marque doit rayonner
+# de sa propre couleur.
+LOGO_OZ_CYAN = (24, 168, 240)
+LOGO_OZ_VIOLET = (96, 48, 240)
 
 FOND = (8, 9, 10)
 ACCENT = (91, 140, 255)
@@ -110,14 +116,20 @@ def composer_couverture(ecrans: dict[str, Image.Image]) -> Image.Image:
     marque, puis on voit ce qu'elle fait. Les telephones debordent par le bas,
     ce qui evite l'effet de vignette posee au milieu d'un cadre.
     """
-    taille = (1600, 1000)
+    # La couverture est rendue en 2400 pixels de large et non en 1600.
+    #
+    # Sur un ecran a densite double, la fiche projet l'affiche jusqu'a environ
+    # 2300 pixels reels : une toile de 1600 y etait agrandie de moitie avant
+    # meme qu'on parle du logo. Deux agrandissements se cumulaient donc, et
+    # c'est ce qui rendait la marque floue.
+    taille = (2400, 1500)
     toile = Image.new("RGBA", taille, (*FOND, 255))
     toile.alpha_composite(halo(taille, (0.22, 0.42), 0.62, ACCENT, 0.3))
     toile.alpha_composite(halo(taille, (0.78, 0.16), 0.6, (126, 88, 255), 0.14))
 
     # ---- Les ecrans, a droite ----
-    hauteur_tel = 900
-    espace = 40
+    hauteur_tel = 1350
+    espace = 60
     choisis = [ecrans[nom] for nom in COUVERTURE_ECRANS if nom in ecrans]
 
     vignettes = []
@@ -152,19 +164,44 @@ def composer_couverture(ecrans: dict[str, Image.Image]) -> Image.Image:
         dimensions = (round(source.size[0] * facteur), LOGO_OZ_HAUTEUR)
         marque = source.resize(dimensions, Image.LANCZOS)
 
-        # Halo derriere la marque. Le masque est pose sur une toile plus grande,
-        # sinon le flou serait coupe net au bord et laisserait un rectangle.
-        marge = 80
+        # Renettoyage apres agrandissement.
+        #
+        # Le lissage de Lanczos adoucit les aretes ; un masque flou leur rend
+        # leur franchise. Il n'est applique qu'aux couches de couleur : le
+        # canal alpha doit rester progressif, sinon le contour se crenelerait.
+        couleur = marque.convert("RGB").filter(
+            ImageFilter.UnsharpMask(radius=2.2, percent=125, threshold=2)
+        )
+        marque = couleur.convert("RGBA")
+        marque.putalpha(source.resize(dimensions, Image.LANCZOS).getchannel("A"))
+
+        # Halo derriere la marque, en deux couches.
+        #
+        # Une couche large et sourde donne l'ambiance, une couche serree et vive
+        # donne l'eclat. Une seule couche produirait soit une brume, soit un
+        # cerne. Le masque est pose sur une toile plus grande, sinon le flou
+        # serait coupe net au bord et laisserait un rectangle visible.
+        alpha = marque.getchannel("A")
+        marge = 150
         grand = Image.new("L", (dimensions[0] + marge * 2, dimensions[1] + marge * 2), 0)
-        grand.paste(marque.getchannel("A"), (marge, marge))
-        voile = grand.filter(ImageFilter.GaussianBlur(34)).point(lambda v: int(v * 0.4))
-        lueur = Image.new("RGBA", grand.size, (*ACCENT, 0))
-        lueur.putalpha(voile)
+        grand.paste(alpha, (marge, marge))
+
+        lueur = Image.new("RGBA", grand.size, (0, 0, 0, 0))
+        for rayon, force, teinte in (
+            (72, 0.34, LOGO_OZ_VIOLET),
+            (26, 0.46, LOGO_OZ_CYAN),
+        ):
+            voile = grand.filter(ImageFilter.GaussianBlur(rayon)).point(
+                lambda v, f=force: int(v * f)
+            )
+            couche = Image.new("RGBA", grand.size, (*teinte, 0))
+            couche.putalpha(voile)
+            lueur.alpha_composite(couche)
 
         # Centre dans l'espace laisse libre a gauche des telephones.
         libre = positions[0][0] if positions else taille[0]
-        mx = max(60, (libre - dimensions[0]) // 2)
-        my = (taille[1] - dimensions[1]) // 2 - 20
+        mx = max(90, (libre - dimensions[0]) // 2)
+        my = (taille[1] - dimensions[1]) // 2 - 30
         toile.alpha_composite(lueur, (mx - marge, my - marge))
         toile.alpha_composite(marque, (mx, my))
 

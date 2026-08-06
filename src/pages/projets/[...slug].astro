@@ -71,7 +71,7 @@ const jsonLd = graphe([
 ]);
 
 // Versions haute definition pour l'ouverture en plein ecran.
-const couvertureGrande = await getImage({ src: data.couverture, width: 1800, format: 'webp' });
+const couvertureGrande = await getImage({ src: data.couverture, width: 2200, format: 'webp' });
 const preuveGrande = data.preuve
   ? await getImage({ src: data.preuve.image, width: 1800, format: 'webp' })
   : null;
@@ -154,7 +154,7 @@ const meta = [
           <Image
             src={data.couverture}
             alt={data.couvertureAlt}
-            widths={[640, 1000, 1500]}
+            widths={[640, 1000, 1500, 2200]}
             sizes="(min-width: 78rem) 72rem, 94vw"
             loading="eager"
             fetchpriority="high"
