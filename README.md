@@ -322,3 +322,5 @@ Trois garde-fous y sont posés, et ils valent pour tout le site :
   **sans IntersectionObserver** : cette API ne se déclenche pas dans certains
   contextes de rendu, et une décoration ne doit jamais dépendre d'un rappel qui
   peut ne pas venir.
+#   P o r t f o l i o  
+ 
