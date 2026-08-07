@@ -16,6 +16,19 @@ Les scripts de `scripts/` **ne tournent pas au build**. Si une image de
 `_sources/` change, relancer le script concerné avant de construire, sinon le
 site continue d'afficher l'ancienne version.
 
+## Mise en ligne : deux gestes, jamais un seul
+
+Le projet Cloudflare est en **Direct Upload**, il n'est **pas** relié à GitHub.
+Un `git push` ne déploie donc rien du tout, il ne fait qu'enregistrer l'historique.
+
+Pour qu'un changement soit visible en ligne, il faut construire puis **téléverser
+`dist` à la main** dans le tableau de bord Cloudflare. Ne jamais écrire ni
+laisser entendre que pousser suffit.
+
+La liaison avec Git est remise à plus tard, quand il aura son propre nom de
+domaine : un projet Direct Upload ne peut pas être relié après coup, il faudrait
+le recréer, et le nom du projet détermine l'adresse.
+
 ## Ce qui n'est pas négociable
 
 - **Aucun tiret long ni demi-cadratin**, ni dans le contenu, ni dans les
