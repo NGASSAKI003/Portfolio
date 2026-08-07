@@ -144,6 +144,19 @@ def tuile(corps: str, largeur: int, hauteur: int, cote: int, rayon: int, marge: 
     return fond
 
 
+def aplatir(image: Image.Image) -> Image.Image:
+    """
+    Aplatit sur la couleur de tuile, jamais sur du noir.
+
+    `convert("RGB")` jette le canal alpha sans rien demander et laisse le noir
+    apparaitre partout ou l'image etait transparente. C'est ce qui donnait des
+    coins noirs aux icones une fois le site installe.
+    """
+    fond = Image.new("RGBA", image.size, (*TUILE_FOND, 255))
+    fond.alpha_composite(image)
+    return fond.convert("RGB")
+
+
 def svg_tuile(corps: str, largeur: int, hauteur: int, rayon: float, marge: float) -> str:
     """Version vectorielle de la meme tuile, pour la favicon SVG."""
     cote = 512.0
@@ -191,24 +204,33 @@ def main() -> None:
         svg_tuile(corps, largeur, hauteur, rayon=104, marge=0.1), encoding="utf-8"
     )
 
-    # 3. Declinaisons matricielles.
-    base = tuile(corps, largeur, hauteur, 512, rayon=104, marge=0.1)
-    base.convert("RGB").save(PUBLIC / "icon-512.png", optimize=True)
-    base.resize((192, 192), Image.LANCZOS).convert("RGB").save(
+    # 3. Declinaisons matricielles, a coins droits.
+    #
+    # Une icone installee ne doit jamais porter son propre arrondi. Chaque
+    # systeme applique le sien : cercle ou goutte sur Android, carre arrondi
+    # sur iOS, tuile sur Windows. Un arrondi cuit dans le fichier ne s'aligne
+    # avec aucun d'eux, et le hors-arrondi virait au noir a l'aplatissement.
+    base = tuile(corps, largeur, hauteur, 512, rayon=0, marge=0.1)
+    aplatir(base).save(PUBLIC / "icon-512.png", optimize=True)
+    aplatir(base.resize((192, 192), Image.LANCZOS)).save(
         PUBLIC / "icon-192.png", optimize=True
     )
-    base.resize((180, 180), Image.LANCZOS).convert("RGB").save(
+    aplatir(base.resize((180, 180), Image.LANCZOS)).save(
         PUBLIC / "apple-touch-icon.png", optimize=True
     )
 
     # 4. Version maskable : zone de securite de 20 % exigee par Android,
-    #    donc coins droits et marque nettement rentree.
-    tuile(corps, largeur, hauteur, 512, rayon=0, marge=0.26).convert("RGB").save(
+    #    donc marque nettement plus rentree que sur la tuile ordinaire.
+    aplatir(tuile(corps, largeur, hauteur, 512, rayon=0, marge=0.26)).save(
         PUBLIC / "icon-maskable-512.png", optimize=True
     )
 
-    # 5. ICO multi-resolution pour la barre d'onglets et les vieux navigateurs.
-    tuile(corps, largeur, hauteur, 256, rayon=44, marge=0.08).convert("RGB").save(
+    # 5. ICO multi-resolution pour la barre d'onglets.
+    #
+    # Seul fichier qui garde son arrondi : un onglet n'applique aucune forme,
+    # c'est donc au fichier de la porter. L'alpha est conserve, sans quoi les
+    # coins redeviendraient noirs.
+    tuile(corps, largeur, hauteur, 256, rayon=44, marge=0.08).save(
         PUBLIC / "favicon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)]
     )
 
