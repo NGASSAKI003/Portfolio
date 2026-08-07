@@ -14,14 +14,61 @@ interface Props {
    * regroupe. Un niveau saute est une erreur d'accessibilite, pas un detail.
    */
   niveau?: 2 | 3;
+  /**
+   * Largeur d'affichage annoncee au navigateur.
+   *
+   * Elle depend de la grille de la page qui accueille la carte, pas de la
+   * carte elle-meme : la meme carte occupe toute la largeur sur l'accueil et
+   * une colonne sur deux dans la liste des projets. Cette valeur etait codee
+   * en dur pour la grille a deux colonnes, si bien que sur l'accueil le
+   * navigateur recevait une image deux fois trop petite pour la boite et
+   * l'agrandissait de 80 pour cent.
+   *
+   * Le repli est la pleine largeur, parce que c'est le cas le plus large donc
+   * le plus sur : une image trop grande reste nette, une image trop petite non.
+   */
+  sizes?: string;
 }
 
-const { projet, taille = 'normale', prioritaire = false, niveau = 3 } = Astro.props;
+const { projet, taille = 'normale', prioritaire = false, niveau = 3, sizes } = Astro.props;
 const { data } = projet;
 const href = `/projets/${projet.id}`;
 const statut = LIBELLES_STATUT[data.statut] ?? data.statut;
 const Titre = `h${niveau}` as 'h2' | 'h3';
 const maxOutils = taille === 'grande' ? 6 : 3;
+
+/*
+ * Le conteneur `.shell` plafonne a 78rem et retire 3rem de marge de chaque
+ * cote : la carte pleine largeur ne depasse donc jamais 72rem. Sur la grande
+ * carte, l'image n'occupe que la premiere colonne au dela de 56rem, soit
+ * environ 56 pour cent de la carte.
+ *
+ * La grande carte annonce pourtant nettement plus que ces 56 pour cent, et
+ * c'est voulu. Au dela de 56rem son image perd son rapport fixe et s'etire sur
+ * toute la hauteur de la carte, hauteur que le texte voisin commande. La boite
+ * devient alors plus haute en proportion que l'image, et `object-fit: cover`
+ * agrandit l'image pour couvrir cette hauteur : la largeur reellement peinte
+ * depasse celle de la boite, de 15 pour cent au dernier releve.
+ *
+ * Or le navigateur choisit sa variante sur la seule largeur annoncee, sans
+ * jamais tenir compte du recadrage. Annoncer la largeur de la boite revenait
+ * donc a livrer une image trop petite, a toutes les densites.
+ *
+ * Le depassement n'est pas constant : il croit a mesure que la colonne de
+ * texte se resserre. Entre 56rem et 78rem la boite devient meme plus haute que
+ * large, 440 sur 528 pixels au releve, et il faut alors peindre 845 pixels de
+ * large pour la couvrir. D'ou la pleine largeur annoncee sur toute cette
+ * plage : c'est la seule valeur qui ne mente jamais.
+ */
+const largeurAnnoncee =
+  sizes ?? (taille === 'grande' ? '(min-width: 78rem) 48rem, 94vw' : '(min-width: 78rem) 72rem, 94vw');
+
+/*
+ * Une seule echelle de largeurs pour les deux tailles. La carte peut aller de
+ * 278 pixels sur un petit telephone a 1152 pixels sur l'accueil en grand
+ * ecran ; a densite double, cela demande jusqu'a 2300 pixels reels.
+ */
+const LARGEURS = [420, 640, 900, 1300, 1800, 2200];
 ---
 
 <article class:list={['carte', 'halo', 'lueur', `carte--${taille}`, 'reveal']}>
@@ -30,12 +77,8 @@ const maxOutils = taille === 'grande' ? 6 : 3;
       <Image
         src={data.couverture}
         alt={data.couvertureAlt}
-        widths={taille === 'grande' ? [640, 960, 1400, 2000] : [420, 640, 900, 1300]}
-        sizes={
-          taille === 'grande'
-            ? '(min-width: 64rem) 64rem, 94vw'
-            : '(min-width: 64rem) 31rem, (min-width: 44rem) 46vw, 94vw'
-        }
+        widths={LARGEURS}
+        sizes={largeurAnnoncee}
         loading={prioritaire ? 'eager' : 'lazy'}
         fetchpriority={prioritaire ? 'high' : 'auto'}
       />

@@ -80,6 +80,11 @@ const jsonLd = graphe([
             taille={index === 0 ? 'grande' : 'normale'}
             prioritaire={index === 0}
             niveau={2}
+            sizes={
+              index === 0
+                ? undefined
+                : '(min-width: 78rem) 36rem, (min-width: 56rem) 46vw, 94vw'
+            }
           />
         ))
       }
