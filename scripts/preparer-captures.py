@@ -39,7 +39,15 @@ ECRANS = [
 COUVERTURE_ECRANS = ["accueil", "publier"]
 
 # Logo de l'application, variante destinee aux fonds sombres.
-LOGO_OZ = RACINE / "_sources" / "logo-zone-version-sombre.png"
+#
+# On prefere la source reconstruite par vectoriser-logo-one-zone.py. Le fichier
+# fourni ne fait que 397 x 441 pixels et ses bords sont deja adoucis : la
+# composition l'agrandissait une fois et demie, et deux adoucissements se
+# cumulaient. La version reconstruite fait 1764 pixels de haut, donc on reduit
+# au lieu d'agrandir. L'original reste le repli et la source de verite.
+LOGO_OZ_NET = RACINE / "_sources" / "logo-zone-net.png"
+LOGO_OZ_ORIGINE = RACINE / "_sources" / "logo-zone-version-sombre.png"
+LOGO_OZ = LOGO_OZ_NET if LOGO_OZ_NET.exists() else LOGO_OZ_ORIGINE
 # Hauteur voulue pour la marque sur la couverture. La largeur suit le rapport
 # d'origine : le logo n'est pas carre, le forcer dans un carre le deformerait.
 LOGO_OZ_HAUTEUR = 660
@@ -164,13 +172,15 @@ def composer_couverture(ecrans: dict[str, Image.Image]) -> Image.Image:
         dimensions = (round(source.size[0] * facteur), LOGO_OZ_HAUTEUR)
         marque = source.resize(dimensions, Image.LANCZOS)
 
-        # Renettoyage apres agrandissement.
+        # Renettoyage apres redimensionnement.
         #
         # Le lissage de Lanczos adoucit les aretes ; un masque flou leur rend
         # leur franchise. Il n'est applique qu'aux couches de couleur : le
         # canal alpha doit rester progressif, sinon le contour se crenelerait.
+        # Reglage doux, parce qu'on reduit desormais au lieu d'agrandir : plus
+        # fort, le trait prendrait un lisere clair.
         couleur = marque.convert("RGB").filter(
-            ImageFilter.UnsharpMask(radius=2.2, percent=125, threshold=2)
+            ImageFilter.UnsharpMask(radius=1.1, percent=70, threshold=2)
         )
         marque = couleur.convert("RGBA")
         marque.putalpha(source.resize(dimensions, Image.LANCZOS).getchannel("A"))
