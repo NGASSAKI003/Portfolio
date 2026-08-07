@@ -1,11 +1,22 @@
 # Portfolio NGASSAKI-NDZA Anaclet Julien
 
+**[ngassaki.pages.dev](https://ngassaki.pages.dev)**
+
 Site personnel. Astro 5, TypeScript strict, Tailwind 4, hébergé sur Cloudflare Pages.
 
 Objectif de référencement, en deux phrases :
 
 1. Quand on cherche un de mes projets, on doit me trouver, moi.
 2. Quand on cherche mon nom, on doit trouver mes projets.
+
+Tout le reste en découle. Huit pages, chacune avec sa propre adresse. Du HTML
+servi déjà rempli, jamais rempli après coup par un script. Et un graphe
+d'entités JSON-LD dont les identifiants ne changent jamais, pour que les moteurs
+fusionnent ces pages en une seule personne reliée à ses travaux.
+
+Ce qui part réellement sur le réseau, mesuré sur le site construit et non
+estimé : **7,6 Ko de JavaScript**, **11,5 Ko de CSS**, **65 Ko de polices**, le
+tout compressé.
 
 ## Démarrer
 
@@ -83,11 +94,17 @@ seulement quand leur source change.
 pip install vtracer pillow svglib rlPyCairo fonttools brotli
 ```
 
-| Script                             | Rôle                                                        |
-| ---------------------------------- | ----------------------------------------------------------- |
-| `scripts/generer-identite.py`      | Vectorise le logo, génère favicons et icônes PWA             |
-| `scripts/generer-visuels.py`       | Couvertures de projet et images de partage                    |
-| `scripts/sous-ensembler-polices.py`| Réduit les polices au jeu latin français                     |
+| Script                                | Rôle                                                      |
+| ------------------------------------- | --------------------------------------------------------- |
+| `scripts/generer-identite.py`         | Vectorise le logo, génère favicons et icônes installables  |
+| `scripts/generer-sigle.py`            | Vectorise le sigle NNAJ de la barre haute                  |
+| `scripts/generer-visuels.py`          | Images de partage des pages                                |
+| `scripts/generer-couverture-logo.py`  | Couverture de la fiche du portfolio                        |
+| `scripts/generer-couverture-demotech.py` | Couverture de la fiche Y-MENI                           |
+| `scripts/vectoriser-logo-one-zone.py` | Reconstruit une source nette du logo One Zone              |
+| `scripts/preparer-captures.py`        | Captures Android de One Zone et couverture du projet       |
+| `scripts/preparer-certificat.py`      | Redresse le certificat DemoTech                            |
+| `scripts/sous-ensembler-polices.py`   | Réduit les polices au jeu latin français                   |
 
 ## Déployer sur Cloudflare Pages
 
@@ -196,11 +213,11 @@ simplement absente, sans rien casser.
 
 **Astro plutôt que Next.js.** Le site est à 95 % du contenu. Astro produit du
 HTML au build et n'envoie aucun runtime de framework. Total du JavaScript livré :
-environ 5,7 Ko compressés, presque entièrement dus aux transitions de page.
+7,6 Ko compressés, dont l'essentiel sert les transitions de page.
 
 **Aucune police depuis un service tiers.** Les trois familles sont
 auto-hébergées, réduites au jeu latin français et à l'intervalle de graisses
-réellement employé, soit 67 Ko au lieu de 132. Sur une connexion moyenne, une
+réellement employé, soit 65 Ko au lieu de 132. Sur une connexion moyenne, une
 connexion réseau supplémentaire coûte plus cher que les octets qu'elle économise.
 
 **Révélation à la lecture en CSS pur.** `animation-timeline: view()`, sans
@@ -230,6 +247,29 @@ laisse simplement le contenu affiché et la lueur immobile.
 mesuré en commentaire dans `src/styles/global.css`. Les huit pages passent le
 niveau AA dans les deux thèmes, à toutes les largeurs testées.
 
+**`sizes` décrit la grille de la page, jamais le composant.** Une même carte de
+projet occupe toute la largeur sur l'accueil et une colonne sur deux dans
+`/projets`. La largeur annoncée au navigateur était écrite dans le composant :
+il recevait donc une image de 640 pixels pour une boîte de 1150 et l'agrandissait
+de 80 pour cent. Elle est devenue une propriété que chaque page renseigne selon
+sa propre grille, avec la pleine largeur en repli, parce qu'une image trop grande
+reste nette et qu'une image trop petite ne le sera jamais.
+
+Un second piège se cache derrière le premier. En `object-fit: cover`, une boîte
+plus haute en proportion que l'image oblige le navigateur à agrandir celle-ci
+pour couvrir la hauteur : la largeur réellement peinte dépasse alors celle de la
+boîte, jusqu'à 845 pixels pour une boîte de 440 sur la grande carte. Or le choix
+de la variante ne regarde que la largeur annoncée, jamais le recadrage. La
+vérification qui compte n'est donc pas « la variante couvre-t-elle la boîte »
+mais « couvre-t-elle la largeur peinte, à chaque densité de pixels ».
+
+**Une icône installée ne porte jamais son propre arrondi.** Android, iOS et
+Windows appliquent chacun la leur. Les icônes livrées sont donc des carrés
+pleins ; seule la favicon garde ses coins arrondis, puisqu'un onglet n'applique
+aucune forme. Et `convert("RGB")` de Pillow remplace la transparence par du
+noir sans prévenir, ce qui donnait des angles noirs à l'installation :
+l'aplatissement se fait désormais sur la couleur de la tuile.
+
 **Navigation mobile en barre inférieure.** Sur un téléphone tenu à une main, le
 haut de l'écran est hors de portée du pouce, et un menu caché derrière trois
 traits demande de savoir que ces trois traits sont un menu. Quatre destinations
@@ -242,11 +282,18 @@ compose aussi la couverture à trois téléphones. Le certificat DemoTech est
 redressé par `scripts/preparer-certificat.py`. Une capture prouve que la chose
 existe, une illustration ne prouve rien.
 
-**Deux familles de caractères, pas trois.** Geist et Geist Mono, sous-ensemblées
-au latin français et à l'intervalle de graisses employé, soit 34 Ko au lieu de
-132 au départ. La hiérarchie vient de la graisse, de la taille et de
-l'interlettrage. Pour essayer une autre police de titrage, un seul jeton est à
-changer : `--font-titre` dans `src/styles/global.css`.
+**Trois familles, une par fonction.** Instrument Serif en titrage, Inter en
+texte courant, JetBrains Mono pour les étiquettes et les métadonnées. Geist et
+Geist Mono ont été essayées puis écartées : la hiérarchie y reposait sur la
+seule graisse, ce qui manquait de caractère en titrage. Pour en essayer une
+autre, un seul jeton est à changer : `--font-titre` dans `src/styles/global.css`.
+
+**Le sigle de la barre haute est un tracé, pas une image.** Les quatre
+initiales sont vectorisées par `scripts/generer-sigle.py`, qui contrôle son
+travail en rastérisant le résultat et en le comparant au dessin d'origine
+pixel par pixel. Le tracé pèse 1 Ko, hérite de `currentColor`, et bascule donc
+avec le thème sans qu'on livre deux fichiers. Le nom complet reste porté par
+le `aria-label` du lien, le titre de la page et le graphe JSON-LD.
 
 **Aucun voyant d'état, aucune pilule de statut.** Les statuts sont du texte dans
 la ligne de métadonnées, avec des formules de métier : « En production » dit
