@@ -55,7 +55,7 @@ export const LINKEDIN = 'https://www.linkedin.com/in/anaclet-julien-ngassaki-ndz
  * Ne coller ici que la valeur de `content`, sans les guillemets ni la balise.
  * Laisser vide tant que ce n'est pas fait : aucune balise ne sera emise.
  */
-export const VERIFICATION_GOOGLE = '';
+export const VERIFICATION_GOOGLE = '1Gvd2cwTrwiVXPfYS2tavB1PMXt2HjcdSqLeVB5xMhw';
 
 /**
  * Profils externes. Ces URL alimentent le champ `sameAs` du schema Person,
