@@ -38,6 +38,21 @@ TUILE_FOND = (255, 255, 255)
 MARQUE_SOMBRE = (4, 34, 95)
 MARQUE_CLAIR = (10, 74, 200)
 
+# Marge autour de la marque, en fraction du cote de la tuile.
+#
+# La marque est presque deux fois plus large que haute : dans un carre, sa
+# hauteur ne remplit qu'un peu plus du tiers, et une marge genereuse la rendait
+# minuscule sur un ecran de telephone. Les coins d'une tuile arrondie restent
+# vides de toute facon, la marque n'y touche jamais.
+MARGE_TUILE = 0.05
+
+# Pour la version maskable, la marge se deduit du disque de securite d'Android,
+# qui couvre 80 % du cote. Il ne suffit pas d'y faire tenir la largeur : ce sont
+# les quatre coins du cadre de la marque qui doivent y entrer. Avec un rapport
+# de 1,97, cela donne une demi-diagonale de 0,5 * sqrt(1 + (1/1,97)^2) fois la
+# largeur, d'ou la marge ci-dessous, verifiee a l'execution.
+MARGE_MASQUABLE = 0.15
+
 
 # --------------------------------------------------------------------------
 # Vectorisation
@@ -201,36 +216,38 @@ def main() -> None:
 
     # 2. Favicon vectorielle. Marge serree : a seize pixels, chaque point compte.
     (PUBLIC / "favicon.svg").write_text(
-        svg_tuile(corps, largeur, hauteur, rayon=104, marge=0.1), encoding="utf-8"
+        svg_tuile(corps, largeur, hauteur, rayon=112, marge=0.06), encoding="utf-8"
     )
 
-    # 3. Declinaisons matricielles, a coins droits.
+    # 3. Icones installables. Chaque systeme a sa regle, aucune n'est la meme.
     #
-    # Une icone installee ne doit jamais porter son propre arrondi. Chaque
-    # systeme applique le sien : cercle ou goutte sur Android, carre arrondi
-    # sur iOS, tuile sur Windows. Un arrondi cuit dans le fichier ne s'aligne
-    # avec aucun d'eux, et le hors-arrondi virait au noir a l'aplatissement.
-    base = tuile(corps, largeur, hauteur, 512, rayon=0, marge=0.1)
-    aplatir(base).save(PUBLIC / "icon-512.png", optimize=True)
-    aplatir(base.resize((192, 192), Image.LANCZOS)).save(
-        PUBLIC / "icon-192.png", optimize=True
-    )
-    aplatir(base.resize((180, 180), Image.LANCZOS)).save(
-        PUBLIC / "apple-touch-icon.png", optimize=True
-    )
+    # Windows affiche le fichier tel quel, sans lui appliquer de forme : pour
+    # qu'une icone y soit arrondie, c'est au fichier de porter l'arrondi, et
+    # l'exterieur doit rester transparent. Un exterieur noir, c'est le defaut
+    # d'origine, et un carre plein donnerait un carre plein sur le bureau.
+    base = tuile(corps, largeur, hauteur, 512, rayon=112, marge=MARGE_TUILE)
+    base.save(PUBLIC / "icon-512.png", optimize=True)
+    base.resize((192, 192), Image.LANCZOS).save(PUBLIC / "icon-192.png", optimize=True)
 
-    # 4. Version maskable : zone de securite de 20 % exigee par Android,
-    #    donc marque nettement plus rentree que sur la tuile ordinaire.
-    aplatir(tuile(corps, largeur, hauteur, 512, rayon=0, marge=0.26)).save(
+    # iOS applique lui-meme son carre arrondi, et il ignore la transparence :
+    # ce qu'il trouve de transparent, il le compose sur du noir. Ce fichier est
+    # donc le seul qui doit rester un carre plein et opaque.
+    aplatir(tuile(corps, largeur, hauteur, 512, rayon=0, marge=MARGE_TUILE)).resize(
+        (180, 180), Image.LANCZOS
+    ).save(PUBLIC / "apple-touch-icon.png", optimize=True)
+
+    # 4. Version maskable. Android y decoupe la forme de son choix, cercle,
+    #    goutte ou carre arrondi, et ne garantit que le disque central de 80 %.
+    #    La marque etant tres large, sa hauteur compte autant que sa largeur
+    #    dans ce disque : MARGE_MASQUABLE est calculee pour que les quatre coins
+    #    de son cadre y tiennent, et pas seulement ses cotes.
+    aplatir(tuile(corps, largeur, hauteur, 512, rayon=0, marge=MARGE_MASQUABLE)).save(
         PUBLIC / "icon-maskable-512.png", optimize=True
     )
 
-    # 5. ICO multi-resolution pour la barre d'onglets.
-    #
-    # Seul fichier qui garde son arrondi : un onglet n'applique aucune forme,
-    # c'est donc au fichier de la porter. L'alpha est conserve, sans quoi les
-    # coins redeviendraient noirs.
-    tuile(corps, largeur, hauteur, 256, rayon=44, marge=0.08).save(
+    # 5. ICO multi-resolution pour la barre d'onglets. Meme raison que Windows :
+    #    aucun navigateur n'arrondit une favicon, donc le fichier s'en charge.
+    tuile(corps, largeur, hauteur, 256, rayon=52, marge=0.06).save(
         PUBLIC / "favicon.ico", format="ICO", sizes=[(16, 16), (32, 32), (48, 48), (64, 64)]
     )
 
