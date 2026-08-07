@@ -1,0 +1,27 @@
+{
+  // Configuration de deploiement Cloudflare.
+  //
+  // Cloudflare a fondu Pages dans Workers : un nouveau projet ne recoit plus
+  // d'adresse en pages.dev mais en workers.dev. Ce fichier decrit un Worker
+  // qui ne fait que servir des fichiers statiques, ce qui correspond
+  // exactement a ce que produit Astro ici.
+  //
+  // Il n'y a aucun code de Worker : le champ "assets" suffit, Cloudflare sert
+  // alors le dossier directement, sans facturer d'invocation.
+  "name": "ngassaki",
+  "compatibility_date": "2026-08-01",
+
+  "assets": {
+    "directory": "./dist",
+
+    // Le site est genere avec trailingSlash: 'never' dans astro.config.mjs.
+    // Les deux reglages doivent concorder, sinon chaque page repond par une
+    // redirection avant de s'afficher, ce qui coute un aller-retour et brouille
+    // les adresses canoniques.
+    "html_handling": "drop-trailing-slash",
+
+    // Une adresse inconnue doit rendre la vraie page 404 du site, avec sa mise
+    // en page et sa navigation, et non une page blanche de Cloudflare.
+    "not_found_handling": "404-page"
+  }
+}
