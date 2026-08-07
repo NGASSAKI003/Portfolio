@@ -1,5 +1,6 @@
 ---
 import Logo from './Logo.astro';
+import Sigle from './Sigle.astro';
 import { NAVIGATION, SITE } from '../lib/site';
 
 /**
@@ -19,7 +20,7 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(`${href}
   <div class="shell entete__interieur">
     <a class="marque" href="/" aria-label={`${SITE.name}, retour à l'accueil`}>
       <Logo class="marque__logo" decoratif />
-      <span class="marque__nom">{SITE.shortName}</span>
+      <Sigle class="marque__sigle" decoratif />
     </a>
 
     <nav class="nav-large" aria-label="Navigation principale">
@@ -136,21 +137,41 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(`${href}
     transform: scale(0.96);
   }
 
-  .marque__logo {
-    height: 1.5rem;
+  /*
+   * Ces deux regles visent des elements qui appartiennent a d'autres
+   * composants, d'ou le `:global`.
+   *
+   * Astro limite chaque feuille a la portee de son composant en ajoutant un
+   * attribut aux elements de son propre gabarit. Le SVG rendu par `Logo.astro`
+   * ne porte que la portee de `Logo`, jamais celle de l'en-tete : une regle
+   * `.marque__logo` ecrite ici ne l'atteignait donc pas, et le logo retombait
+   * silencieusement sur le `height: 1em` de son composant. La classe passee en
+   * propriete ne suffit pas, il faut sortir de la portee explicitement. Meme
+   * motif que `.carte__visuel :global(img)` dans CarteProjet.
+   */
+  .marque :global(.marque__logo) {
+    height: 1.1rem;
   }
 
-  .marque__nom {
-    font-family: var(--font-mono);
-    font-size: var(--text-2xs);
-    font-weight: 600;
-    letter-spacing: 0.12em;
+  /*
+   * Le sigle des quatre initiales remplace le nom ecrit.
+   *
+   * Le nom complet n'a pas disparu pour autant : il reste porte par le
+   * `aria-label` du lien, par le titre de la page et par le graphe JSON-LD.
+   * Un lecteur d'ecran annonce donc toujours « NGASSAKI-NDZA Anaclet Julien,
+   * retour a l'accueil », et le sigle lui-meme est marque comme decoratif
+   * pour ne pas etre annonce deux fois.
+   *
+   * Il herite de `currentColor`, d'ou la couleur posee ici et le survol qui
+   * reprend exactement le comportement de l'ancien texte.
+   */
+  .marque :global(.marque__sigle) {
+    height: 1rem;
     color: var(--c-text);
-    white-space: nowrap;
     transition: color 0.25s var(--ease-sortie);
   }
 
-  .marque:hover .marque__nom {
+  .marque:hover :global(.marque__sigle) {
     color: var(--c-accent);
   }
 

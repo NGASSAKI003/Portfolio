@@ -1,0 +1,42 @@
+---
+import { SIGLE_VIEWBOX, SIGLE_PATHS } from './sigle-path';
+
+interface Props {
+  class?: string;
+  /** Vrai quand un texte voisin porte deja le nom : le SVG devient invisible aux lecteurs d'ecran. */
+  decoratif?: boolean;
+  titre?: string;
+}
+
+const {
+  class: className,
+  decoratif = false,
+  titre = 'NGASSAKI-NDZA Anaclet Julien',
+} = Astro.props;
+---
+
+<svg
+  class:list={['sigle', className]}
+  viewBox={SIGLE_VIEWBOX}
+  xmlns="http://www.w3.org/2000/svg"
+  role={decoratif ? 'presentation' : 'img'}
+  aria-hidden={decoratif ? 'true' : undefined}
+  aria-label={decoratif ? undefined : titre}
+  focusable="false"
+>
+  {!decoratif && <title>{titre}</title>}
+  <g fill="currentColor" set:html={SIGLE_PATHS} />
+</svg>
+
+<style>
+  /*
+   * Le sigle prend la couleur du texte qui l'entoure, donc il bascule avec le
+   * theme sans qu'on ait a livrer une seconde image. C'est aussi ce qui lui
+   * permet de reagir au survol comme le faisait le nom qu'il remplace.
+   */
+  .sigle {
+    height: 1em;
+    width: auto;
+    display: block;
+  }
+</style>
