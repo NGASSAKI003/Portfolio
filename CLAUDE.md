@@ -79,6 +79,10 @@ site continue d'afficher l'ancienne version.
 
 ## Valeurs à remplir
 
-Dans `site.config.mjs` : `VERIFICATION_GOOGLE` reste vide, voir l'étape 5 de
-[A-FAIRE.md](A-FAIRE.md). `SITE_URL` devra être corrigé si l'adresse de
-déploiement diffère de celle qui y figure.
+Dans `site.config.mjs` : `VERIFICATION_GOOGLE` reste vide, en attente de la
+vérification Google Search Console. `SITE_URL` devra être corrigé si l'adresse
+de déploiement diffère de celle qui y figure.
+
+Les guides `A-FAIRE.md` et `LINKEDIN.md` existent sur le disque mais sont hors
+du dépôt : ce sont des marches à suivre personnelles, sans rapport avec le code.
+Ne pas les y remettre.

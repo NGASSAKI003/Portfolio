@@ -15,3 +15,7 @@ Thumbs.db
 
 # sources de travail (archives, originaux haute definition)
 _sources/
+
+# guides personnels, hors du perimetre du projet
+A-FAIRE.md
+LINKEDIN.md
