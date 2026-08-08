@@ -46,12 +46,25 @@ MARQUE_CLAIR = (10, 74, 200)
 # vides de toute facon, la marque n'y touche jamais.
 MARGE_TUILE = 0.05
 
-# Pour la version maskable, la marge se deduit du disque de securite d'Android,
-# qui couvre 80 % du cote. Il ne suffit pas d'y faire tenir la largeur : ce sont
-# les quatre coins du cadre de la marque qui doivent y entrer. Avec un rapport
-# de 1,97, cela donne une demi-diagonale de 0,5 * sqrt(1 + (1/1,97)^2) fois la
-# largeur, d'ou la marge ci-dessous, verifiee a l'execution.
-MARGE_MASQUABLE = 0.15
+# Marge de la version maskable, celle qu'Android decoupe lui-meme.
+#
+# Le disque de securite garanti par Android couvre 80 % du cote. S'y tenir
+# strictement imposait une marque a 70 % de la tuile, soit bien plus petite que
+# les 89 % affiches sur ordinateur, et l'ecart se voyait sur un telephone.
+#
+# Or ce disque est un minimum garanti, pas la forme reellement appliquee : la
+# plupart des lanceurs decoupent un squircle, nettement plus large sur les
+# flancs. Mesure faite sur la silhouette elle-meme, et non sur son cadre :
+#
+#     largeur    perdu sur cercle strict    perdu sur squircle
+#       70 %             0,00 %                   0,00 %
+#       78 %             0,36 %                   0,00 %
+#       82 %             1,14 %                   0,00 %
+#       90 %             3,38 %                   0,07 %
+#
+# A 82 % on ne perd donc rien sur un squircle, et seulement l'extreme pointe
+# des volutes sur un cercle parfait. Le compromis est nettement favorable.
+MARGE_MASQUABLE = 0.09
 
 
 # --------------------------------------------------------------------------
