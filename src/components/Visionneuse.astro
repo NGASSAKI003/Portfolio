@@ -156,6 +156,69 @@
   .visionneuse__fermer:active {
     transform: scale(0.9);
   }
+
+  /*
+   * Telephone et tablette : l'image prend tout l'ecran.
+   *
+   * Sur un petit ecran, chaque marge se paie cher. Le cadre, sa bordure et son
+   * arrondi sont des agrements de bureau ; ici ils volent des pixels a la seule
+   * chose qu'on est venu regarder. L'image occupe donc toute la surface, centree,
+   * et garde son rapport d'origine : `contain` ne recadre jamais.
+   *
+   * La legende ne prend plus de rangee, elle se superpose en bas sur un voile
+   * degrade. Elle reste lisible sur n'importe quelle image sans rien lui retirer.
+   */
+  @media (max-width: 63.99rem) {
+    .visionneuse {
+      width: 100vw;
+      height: 100dvh;
+      /*
+       * La feuille du navigateur impose aux `dialog` un `max-height` de
+       * calc(100% - 6px - 2em), soit 774 pixels sur un ecran de 812 : sans
+       * cette neutralisation, le plein ecran demande n'est jamais accorde et
+       * l'image deborde de son cadre. Meme chose pour la marge automatique,
+       * qui recentrerait la boite au lieu de la coller aux bords.
+       */
+      max-height: none;
+      margin: 0;
+    }
+
+    .visionneuse__cadre {
+      grid-template-rows: 1fr;
+      gap: 0;
+    }
+
+    .visionneuse__cadre img {
+      /*
+       * Placee explicitement dans la meme case que la legende, sinon elle se
+       * ferait auto-placer dans une rangee suivante : des qu'un element est
+       * pose a la main, les autres cherchent la case libre d'apres, et l'image
+       * se retrouvait sous la legende, hors de l'ecran.
+       */
+      grid-area: 1 / 1;
+      align-self: center;
+      justify-self: center;
+      max-width: 100vw;
+      max-height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .visionneuse__cadre figcaption {
+      /* Meme case que l'image, posee au bas de l'ecran. */
+      grid-area: 1 / 1;
+      align-self: end;
+      justify-self: stretch;
+      max-width: none;
+      padding: 2.5rem 1rem calc(1rem + env(safe-area-inset-bottom));
+      color: var(--c-text);
+      background: linear-gradient(to top, rgb(4 5 7 / 0.85), rgb(4 5 7 / 0));
+      /* Le voile ne doit pas intercepter le toucher : un appui sur l'image
+         reste un appui sur l'image, et un appui a cote ferme la visionneuse. */
+      pointer-events: none;
+    }
+  }
 </style>
 
 <script>
