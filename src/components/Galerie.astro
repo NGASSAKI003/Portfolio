@@ -36,6 +36,7 @@ const pleinEcran = await Promise.all(
               type="button"
               class="zoom galerie__cadre"
               data-zoom
+              data-zoom-groupe="galerie"
               data-zoom-src={pleinEcran[index]!.src}
               data-zoom-alt={vue.alt}
               data-zoom-legende={vue.legende}
@@ -101,11 +102,20 @@ const pleinEcran = await Promise.all(
     height: 100%;
   }
 
+  /*
+   * Le fond de la vignette reste sombre dans les deux themes.
+   *
+   * Ce n'est pas une surface du site, c'est l'interieur d'un ecran de telephone.
+   * Les captures sont en 0,47 alors que la boite est en 9/16, il reste donc des
+   * bandes sur les cotes : en theme clair elles devenaient blanches autour d'une
+   * capture d'application sombre, et cela se lisait comme un defaut d'affichage.
+   */
   .galerie__cadre {
+    --c-ecran: #08090a;
     overflow: hidden;
     border: 1px solid var(--c-line);
     border-radius: var(--radius-card);
-    background: var(--c-surface-2);
+    background: var(--c-ecran);
     box-shadow: var(--ombre-carte);
   }
 
@@ -116,7 +126,7 @@ const pleinEcran = await Promise.all(
        c'est a dire la moitie de ce qu'il y a a montrer. */
     aspect-ratio: 9 / 16;
     object-fit: contain;
-    background: var(--c-bg);
+    background: var(--c-ecran);
   }
 
   .galerie__vue figcaption {
