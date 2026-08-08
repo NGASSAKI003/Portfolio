@@ -83,17 +83,30 @@ const estActif = (href: string) => chemin === href || chemin.startsWith(`${href}
     top: 0;
     z-index: 50;
     border-bottom: 1px solid transparent;
-    backdrop-filter: blur(16px) saturate(1.5);
-    -webkit-backdrop-filter: blur(16px) saturate(1.5);
     transition:
       transform 0.42s var(--ease-sortie),
       background-color 0.4s var(--ease-sortie),
       border-color 0.4s var(--ease-sortie);
   }
 
+  /*
+   * Le verre depoli n'apparait qu'avec le fond, jamais avant.
+   *
+   * Le filtre etait pose sur la barre en permanence, y compris tout en haut de
+   * page ou son fond est entierement transparent. La barre etait donc invisible
+   * mais troublait quand meme ce qui passait dessous : une bande floutee et
+   * sursaturee d'un facteur 1,5 en haut de l'ecran. Sur le theme sombre, du
+   * flou sur du sombre se remarque a peine ; sur le theme clair, avec du texte
+   * fonce qui defile derriere, cela sautait aux yeux.
+   *
+   * Un filtre d'arriere-plan n'a de sens que sous une surface. La barre basse
+   * ne connait pas ce defaut : son fond, lui, est opaque en permanence.
+   */
   .entete[data-defile='oui'] {
     background: var(--c-verre);
     border-bottom-color: var(--c-line);
+    backdrop-filter: blur(16px) saturate(1.5);
+    -webkit-backdrop-filter: blur(16px) saturate(1.5);
   }
 
   .entete[data-cache='oui'] {
