@@ -1,12 +1,15 @@
 """
-Genere les visuels de marque : couvertures de projet et images de partage.
+Genere les images de partage : public/og/<slug>.png, en 1200x630.
 
-  src/assets/couvertures/<slug>.png   1600x1000, illustration de la fiche projet
-  public/og/<slug>.png                1200x630, carte WhatsApp / LinkedIn / X
+Ce sont les vignettes que montrent WhatsApp, LinkedIn et les moteurs quand on
+partage un lien. Ce sont des compositions abstraites tirees du trace du logo.
 
-Les couvertures sont des compositions abstraites tirees du trace du logo.
-Elles sont volontairement neutres : le jour ou de vraies captures d'ecran sont
-disponibles, il suffit de remplacer le fichier, le code ne bouge pas.
+Le script produisait aussi des couvertures de fiche projet, en attendant de
+vraies images. Les trois projets ont depuis les leurs, composees a partir de
+captures et de documents reels par des scripts dedies, et plus personne ne
+referencait ces couvertures abstraites : elles etaient reecrites a chaque
+execution sans jamais etre affichees, ce qui laissait croire qu'on regenerait
+la bonne image alors que rien ne bougeait sur le site.
 
 Prerequis : pip install pillow fonttools brotli svglib rlPyCairo
 """
@@ -26,7 +29,6 @@ from svglib.svglib import svg2rlg
 RACINE = Path(__file__).resolve().parent
 RACINE = RACINE.parent
 CACHE = RACINE / "scripts" / ".cache"
-COUVERTURES = RACINE / "src" / "assets" / "couvertures"
 OG = RACINE / "public" / "og"
 CONTENU = RACINE / "src" / "content" / "projets"
 
@@ -210,19 +212,6 @@ def couper(texte: str, police: ImageFont.FreeTypeFont, largeur_max: int) -> list
 # Sorties
 # --------------------------------------------------------------------------
 
-def couverture(slug: str, graine: int) -> Path:
-    taille = (1600, 1000)
-    image = toile(taille, graine)
-    poser_marque(image, graine, echelle=0.85, opacite=54)
-    image.alpha_composite(halo(taille, (0.5, 1.15), 0.9, FOND, 0.85))
-    cadre(image)
-
-    COUVERTURES.mkdir(parents=True, exist_ok=True)
-    chemin = COUVERTURES / f"{slug}.png"
-    image.convert("RGB").save(chemin, optimize=True)
-    return chemin
-
-
 def carte_partage(slug: str, titre: str, sous_titre: str, meta: str, graine: int) -> Path:
     taille = (1200, 630)
     image = toile(taille, graine)
@@ -295,7 +284,13 @@ PAGES = [
     ("contact", "Travaillons ensemble", "Disponible immédiatement, sur site à Pointe-Noire ou à distance.", "Contact", 53),
 ]
 
-COUVERTURES_PROJETS = [
+# Graine du generateur aleatoire pour chaque projet.
+#
+# Elle fixe la composition de la carte de partage : meme graine, meme image.
+# Ne pas toucher a ces nombres, sinon les vignettes deja partagees changeraient
+# d'aspect sans raison. Un projet absent de cette liste recoit une graine
+# derivee de son nom, ce qui est stable aussi.
+GRAINES_PROJETS = [
     ("one-zone", 101),
     ("y-meni-sentinel", 211),
     ("portfolio-referencement", 307),
@@ -303,10 +298,6 @@ COUVERTURES_PROJETS = [
 
 
 def main() -> None:
-    for slug, graine in COUVERTURES_PROJETS:
-        chemin = couverture(slug, graine)
-        print(f"couverture  {chemin.name:<32} {chemin.stat().st_size:>8} o")
-
     for slug, titre, sous, meta, graine in PAGES:
         chemin = carte_partage(slug, titre, sous, meta, graine)
         print(f"partage     {chemin.name:<32} {chemin.stat().st_size:>8} o")
@@ -317,7 +308,7 @@ def main() -> None:
             if not champs:
                 continue
             slug = fichier.stem
-            graine = dict(COUVERTURES_PROJETS).get(slug, sum(map(ord, slug)))
+            graine = dict(GRAINES_PROJETS).get(slug, sum(map(ord, slug)))
             chemin = carte_partage(
                 slug,
                 champs.get("titre", slug),
