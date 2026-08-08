@@ -6,14 +6,35 @@ interface Props {
 
 const { chiffres, class: className } = Astro.props;
 
-// Le nombre de colonnes suit le nombre de chiffres : jamais de case orpheline
-// en bout de grille. Au dela de quatre, on repasse a quatre par ligne.
+// Le nombre de colonnes suit le nombre de chiffres. Au dela de quatre, on
+// repasse a quatre par ligne.
 const colonnes = Math.min(chiffres.length, 4);
+
+/*
+ * Aucune case orpheline en bout de grille, dans les deux dispositions.
+ *
+ * L'intention etait deja la, mais elle ne valait qu'au dessus de 52rem, la ou
+ * le nombre de colonnes epouse le nombre de chiffres. En dessous, la grille est
+ * figee a deux colonnes : trois chiffres y laissaient donc un trou en bas a
+ * droite, visible sur telephone et sur tablette.
+ *
+ * On compte les cases restees vides sur la derniere ligne, et le dernier
+ * element s'etire pour les absorber.
+ */
+const etirement = (parLigne: number) => {
+  const reste = chiffres.length % parLigne;
+  return reste === 0 ? 1 : parLigne - reste + 1;
+};
+const etirementEtroit = etirement(2);
+const etirementLarge = etirement(colonnes);
 ---
 
 {
   chiffres.length > 0 && (
-    <dl class:list={['chiffres', className]} style={`--colonnes:${colonnes}`}>
+    <dl
+      class:list={['chiffres', className]}
+      style={`--colonnes:${colonnes};--etirement-etroit:${etirementEtroit};--etirement-large:${etirementLarge}`}
+    >
       {chiffres.map((chiffre) => (
         <div class="chiffres__item reveal">
           <dt class="chiffres__valeur">{chiffre.valeur}</dt>
@@ -70,9 +91,18 @@ const colonnes = Math.min(chiffres.length, 4);
     letter-spacing: 0.02em;
   }
 
+  /* Le dernier element absorbe les cases restees vides sur sa ligne. */
+  .chiffres__item:last-child {
+    grid-column: span var(--etirement-etroit, 1);
+  }
+
   @media (min-width: 52rem) {
     .chiffres {
       grid-template-columns: repeat(var(--colonnes, 4), minmax(0, 1fr));
+    }
+
+    .chiffres__item:last-child {
+      grid-column: span var(--etirement-large, 1);
     }
   }
 </style>
