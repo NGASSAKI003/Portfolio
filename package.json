@@ -10,7 +10,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "astro": "astro"
+    "astro": "astro",
+    "postbuild": "node scripts/alleger-dist.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^4.3.14",

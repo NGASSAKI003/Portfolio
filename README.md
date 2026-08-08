@@ -13,7 +13,7 @@ s'agit d'une seule personne et de ses travaux.
 Astro 5, TypeScript strict, Tailwind 4, contenu en Markdown validé par Zod,
 hébergé sur Cloudflare Pages.
 
-Le site envoie 7,6 Ko de JavaScript, 11,5 Ko de CSS et 65 Ko de polices, une
+Le site envoie 7,6 Ko de JavaScript, 11,9 Ko de CSS et 65 Ko de polices, une
 fois compressés. Ce sont des chiffres relevés sur le site construit, pas des
 estimations.
 
@@ -34,6 +34,13 @@ site statique dans `dist/`, `npm run preview` le sert comme en production, et
 Je lance les trois avant chaque mise en ligne. Cloudflare exécute exactement la
 même commande de build sur ses serveurs : si elle échoue chez moi, elle échouera
 chez eux, et le site restera sur l'ancienne version sans que rien ne prévienne.
+
+Après chaque construction, `scripts/alleger-dist.mjs` retire de `dist` les
+images qu'aucune page ne demande. Astro y recopie les originaux des collections
+de contenu en plus des variantes qu'il en tire, et cela représentait 6,8 des
+12,1 Mo de la construction. Le script ne sort jamais de `dist/_astro`, ne touche
+qu'à des images, et épargne tout fichier dont le nom apparaît ne serait-ce
+qu'une fois dans le site livré.
 
 ## Ajouter un projet
 
