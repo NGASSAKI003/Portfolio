@@ -16,7 +16,8 @@
 
   <button
     type="button"
-    class="visionneuse__fermer"
+    class="visionneuse__bouton visionneuse__fermer"
+    data-visionneuse-controle
     data-visionneuse-fermer
     aria-label="Fermer l'image"
   >
@@ -30,9 +31,51 @@
     </svg>
   </button>
 
+  {/* Les fleches n'apparaissent que si la serie compte plus d'une image. */}
+  <button
+    type="button"
+    class="visionneuse__bouton visionneuse__precedent"
+    data-visionneuse-controle
+    data-visionneuse-precedent
+    hidden
+    aria-label="Image précédente"
+  >
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        d="M15 5 8 12l7 7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+  </button>
+
+  <button
+    type="button"
+    class="visionneuse__bouton visionneuse__suivant"
+    data-visionneuse-controle
+    data-visionneuse-suivant
+    hidden
+    aria-label="Image suivante"
+  >
+    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <path
+        d="M9 5l7 7-7 7"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"></path>
+    </svg>
+  </button>
+
   <figure class="visionneuse__cadre">
     <img data-visionneuse-image alt="" />
-    <figcaption data-visionneuse-legende></figcaption>
+    <figcaption>
+      <span data-visionneuse-legende></span>
+      <span class="visionneuse__rang" data-visionneuse-rang hidden></span>
+    </figcaption>
   </figure>
 </dialog>
 
@@ -134,16 +177,13 @@
     text-align: center;
     font-size: var(--text-sm);
     color: var(--c-text-2);
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
   }
 
-  .visionneuse__cadre figcaption:empty {
-    display: none;
-  }
-
-  .visionneuse__fermer {
+  .visionneuse__bouton {
     position: fixed;
-    top: max(1rem, env(safe-area-inset-top));
-    right: 1rem;
     z-index: 2;
     display: inline-flex;
     align-items: center;
@@ -162,12 +202,57 @@
       transform 0.2s var(--ease-ressort);
   }
 
-  .visionneuse__fermer:hover {
+  /* `hidden` doit l'emporter sur le `display` pose juste au dessus. */
+  .visionneuse__bouton[hidden] {
+    display: none;
+  }
+
+  .visionneuse__bouton:hover {
     background: var(--c-surface);
   }
 
-  .visionneuse__fermer:active {
+  .visionneuse__bouton:active {
     transform: scale(0.9);
+  }
+
+  .visionneuse__fermer {
+    top: max(1rem, env(safe-area-inset-top));
+    right: 1rem;
+  }
+
+  /*
+   * Les fleches sont a mi-hauteur, la ou le pouce arrive sans deplacer la main.
+   * Le glissement lateral fait le meme travail : elles sont la pour montrer
+   * qu'une suite existe, autant que pour servir.
+   */
+  .visionneuse__precedent,
+  .visionneuse__suivant {
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .visionneuse__precedent:active,
+  .visionneuse__suivant:active {
+    transform: translateY(-50%) scale(0.9);
+  }
+
+  .visionneuse__precedent {
+    left: max(0.75rem, env(safe-area-inset-left));
+  }
+
+  .visionneuse__suivant {
+    right: max(0.75rem, env(safe-area-inset-right));
+  }
+
+  .visionneuse__rang {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    color: var(--c-text-3);
+    letter-spacing: 0.06em;
+  }
+
+  .visionneuse__cadre figcaption[hidden] {
+    display: none;
   }
 
   /*
@@ -242,15 +327,60 @@
 
     const image = boite.querySelector<HTMLImageElement>('[data-visionneuse-image]');
     const legende = boite.querySelector<HTMLElement>('[data-visionneuse-legende]');
+    const rang = boite.querySelector<HTMLElement>('[data-visionneuse-rang]');
+    const soustitre = boite.querySelector<HTMLElement>('figcaption');
     const fermeture = boite.querySelector<HTMLButtonElement>('[data-visionneuse-fermer]');
+    const precedent = boite.querySelector<HTMLButtonElement>('[data-visionneuse-precedent]');
+    const suivant = boite.querySelector<HTMLButtonElement>('[data-visionneuse-suivant]');
     if (!image || !legende) return;
 
-    function ouvrir(declencheur: HTMLElement) {
-      const source = declencheur.dataset.zoomSrc;
-      if (!source) return;
-      image!.src = source;
+    /*
+     * La serie en cours.
+     *
+     * Une image peut appartenir a une suite, comme les captures d'une galerie,
+     * ou etre seule, comme une couverture. Le declencheur le dit par
+     * `data-zoom-groupe` ; sans lui, la serie ne contient que cette image et
+     * les fleches restent cachees.
+     *
+     * La liste est relue a chaque ouverture, jamais mise en cache : une
+     * transition de page remplace les boutons, et des references gardees de la
+     * page precedente pointeraient dans le vide.
+     */
+    let serie: HTMLElement[] = [];
+    let position = 0;
+
+    function afficher(i: number) {
+      const declencheur = serie[i];
+      if (!declencheur) return;
+      position = i;
+      image!.src = declencheur.dataset.zoomSrc ?? '';
       image!.alt = declencheur.dataset.zoomAlt ?? '';
       legende!.textContent = declencheur.dataset.zoomLegende ?? '';
+
+      const plusieurs = serie.length > 1;
+      if (rang) {
+        rang.textContent = plusieurs ? `${i + 1} / ${serie.length}` : '';
+        rang.hidden = !plusieurs;
+      }
+      if (precedent) precedent.hidden = !plusieurs;
+      if (suivant) suivant.hidden = !plusieurs;
+      // La legende disparait entierement quand elle n'a rien a dire.
+      if (soustitre) soustitre.hidden = !legende!.textContent && !plusieurs;
+    }
+
+    function aller(pas: number) {
+      if (serie.length < 2) return;
+      afficher((position + pas + serie.length) % serie.length);
+    }
+
+    function ouvrir(declencheur: HTMLElement) {
+      if (!declencheur.dataset.zoomSrc) return;
+      const groupe = declencheur.dataset.zoomGroupe;
+      serie = groupe
+        ? [...document.querySelectorAll<HTMLElement>(`[data-zoom-groupe="${groupe}"]`)]
+        : [declencheur];
+      const depart = serie.indexOf(declencheur);
+      afficher(depart === -1 ? 0 : depart);
       boite!.showModal();
     }
 
@@ -277,12 +407,53 @@
     });
 
     fermeture?.addEventListener('click', fermer);
+    precedent?.addEventListener('click', () => aller(-1));
+    suivant?.addEventListener('click', () => aller(1));
 
     // Clic hors de l'image : le `dialog` occupe toute la zone, on distingue donc
-    // le fond de la figure elle meme.
+    // le fond de la figure elle meme. Les commandes sont exclues, sans quoi une
+    // fleche fermerait la visionneuse au lieu de faire defiler.
     boite.addEventListener('click', (evenement) => {
-      if (!(evenement.target as Element).closest('.visionneuse__cadre img')) fermer();
+      const cible = evenement.target as Element;
+      if (cible.closest('.visionneuse__cadre img')) return;
+      if (cible.closest('[data-visionneuse-controle]')) return;
+      fermer();
     });
+
+    // Fleches du clavier, pour qui navigue sans souris.
+    boite.addEventListener('keydown', (evenement) => {
+      if (evenement.key === 'ArrowLeft') aller(-1);
+      else if (evenement.key === 'ArrowRight') aller(1);
+    });
+
+    /*
+     * Glissement lateral, le geste attendu sur un ecran tactile.
+     *
+     * On ne retient que les gestes franchement horizontaux : un glissement
+     * vertical est une intention de defilement, pas de changement d'image.
+     * Le seuil de 45 pixels evite qu'un simple appui un peu traine ne fasse
+     * sauter une image.
+     */
+    let departX = 0;
+    let departY = 0;
+    boite.addEventListener(
+      'touchstart',
+      (evenement) => {
+        departX = evenement.changedTouches[0]!.clientX;
+        departY = evenement.changedTouches[0]!.clientY;
+      },
+      { passive: true },
+    );
+    boite.addEventListener(
+      'touchend',
+      (evenement) => {
+        const ecartX = evenement.changedTouches[0]!.clientX - departX;
+        const ecartY = evenement.changedTouches[0]!.clientY - departY;
+        if (Math.abs(ecartX) < 45 || Math.abs(ecartX) < Math.abs(ecartY)) return;
+        aller(ecartX < 0 ? 1 : -1);
+      },
+      { passive: true },
+    );
 
     // Echap est gere par le navigateur. `cancel` precede la fermeture native et
     // se declenche, lui, de maniere fiable : on en profite pour nettoyer aussi.
