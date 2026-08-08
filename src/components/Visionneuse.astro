@@ -55,6 +55,19 @@
     display: grid;
   }
 
+  /*
+   * Un dialogue ferme doit disparaitre, et c'est a nous de le dire.
+   *
+   * Le navigateur prevoit `dialog:not([open]) { display: none }`, mais une
+   * regle d'auteur l'emporte toujours sur une regle du navigateur, quelle que
+   * soit la specificite. Le `display: grid` ci-dessus l'annulait donc, et le
+   * bouton de fermeture, positionne en `fixed`, flottait sur toutes les pages
+   * en permanence. Il se voyait des que la barre haute s'escamotait.
+   */
+  .visionneuse:not([open]) {
+    display: none;
+  }
+
   .visionneuse::backdrop {
     background: rgb(4 5 7 / 0.88);
     backdrop-filter: blur(8px);
