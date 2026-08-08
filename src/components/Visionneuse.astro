@@ -40,12 +40,19 @@
   .visionneuse {
     width: min(96vw, 90rem);
     max-width: none;
-    max-height: 94dvh;
+    /*
+     * Hauteur definie et non simple plafond : c'est elle qui permet au cadre,
+     * puis a l'image, de calculer la place qui leur revient. Avec un simple
+     * `max-height`, la hauteur reste indefinie et un `max-height: 100%` plus
+     * bas ne se resout pas.
+     */
+    height: 94dvh;
     padding: 0;
     border: 0;
     background: transparent;
     color: var(--c-text);
     overflow: visible;
+    display: grid;
   }
 
   .visionneuse::backdrop {
@@ -77,19 +84,32 @@
     }
   }
 
+  /*
+   * L'image prend exactement ce que la legende lui laisse.
+   *
+   * Elle etait plafonnee a 82dvh, un nombre choisi pour reserver de la place a
+   * une legende dont on ignore la hauteur : trop bas quand elle est courte ou
+   * absente, et sur un telephone cela laissait cent pixels perdus en bas.
+   * La rangee `1fr` a une hauteur definie, donc le `max-height: 100%` de
+   * l'image s'y resout, et l'image continue d'epouser son sujet au lieu de
+   * s'etendre en boite vide sous sa bordure.
+   */
   .visionneuse__cadre {
     margin: 0;
-    display: flex;
-    flex-direction: column;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: 1fr auto;
     gap: 0.9rem;
-    align-items: center;
+    justify-items: center;
   }
 
   .visionneuse__cadre img {
+    min-height: 0;
     max-width: 100%;
-    max-height: 82dvh;
+    max-height: 100%;
     width: auto;
     height: auto;
+    align-self: center;
     object-fit: contain;
     border-radius: var(--radius-card);
     border: 1px solid var(--c-line-forte);
