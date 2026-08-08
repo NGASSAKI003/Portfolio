@@ -1,7 +1,31 @@
 # En-têtes HTTP appliqués par Cloudflare Pages.
 # Le nom du fichier et la syntaxe sont imposés par la plateforme.
 
+# Politique de sécurité du contenu.
+#
+# Le site ne charge strictement rien d'ailleurs que de lui-même : ni police, ni
+# script, ni image tierce. `default-src 'self'` grave cette réalité dans le
+# marbre, et c'est là tout l'intérêt. Si une dépendance était un jour
+# compromise et tentait d'appeler un serveur extérieur, le navigateur
+# refuserait, sans qu'on ait rien à surveiller.
+#
+# `data:` est nécessaire pour les images : la constellation du pied de page
+# rastérise le tracé du logo en le passant par une adresse `data:`.
+#
+# `'unsafe-inline'` est assumé, et voici pourquoi. Le script qui applique le
+# thème doit être en ligne, c'est sa raison d'être : il s'exécute avant le
+# premier rendu pour éviter que la page ne clignote en blanc. Quant aux styles,
+# les pages comptent quatorze blocs en ligne et soixante et un attributs
+# `style=`. On pourrait empreindre chacun d'eux, mais l'empreinte changerait à
+# la moindre modification et le site casserait en silence, ce qui serait un
+# remède pire que le mal.
+#
+# Le risque résiduel est faible : aucun formulaire, aucune saisie de visiteur,
+# aucun cookie, aucune authentification. Les directives qui comptent vraiment
+# ici sont les autres, et elles, elles sont strictes.
 /*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; manifest-src 'self'; media-src 'none'; worker-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; upgrade-insecure-requests
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
   X-Content-Type-Options: nosniff
   Referrer-Policy: strict-origin-when-cross-origin
   X-Frame-Options: SAMEORIGIN
