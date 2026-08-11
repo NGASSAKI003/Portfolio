@@ -258,6 +258,23 @@ def main() -> None:
         PUBLIC / "icon-maskable-512.png", optimize=True
     )
 
+    # 4bis. Version monochrome, pour les icones thematiques d'Android.
+    #
+    # Depuis Android 13, le systeme peut jeter les couleurs d'une icone, n'en
+    # garder que la silhouette, et la reteindre avec la palette tiree du fond
+    # d'ecran. C'est un reglage du telephone, pas un choix du site : quand il
+    # est actif, aucune couleur envoyee ici ne sera respectee.
+    #
+    # Sans ce fichier, Android deduit la silhouette de l'icone couleur et le
+    # resultat est approximatif. En la fournissant, on garde la main sur le
+    # dessin meme quand on n'a plus la main sur la couleur. Le trace est blanc
+    # sur transparent : seule l'opacite est lue, la couleur est ignoree.
+    #
+    # Meme marge que la version maskable, puisque le systeme la decoupe pareil.
+    mono = Image.new("RGBA", (512, 512), (255, 255, 255, 255))
+    mono.putalpha(silhouette(corps, largeur, hauteur, 512, MARGE_MASQUABLE))
+    mono.save(PUBLIC / "icon-monochrome-512.png", optimize=True)
+
     # 5. ICO multi-resolution pour la barre d'onglets. Meme raison que Windows :
     #    aucun navigateur n'arrondit une favicon, donc le fichier s'en charge.
     tuile(corps, largeur, hauteur, 256, rayon=52, marge=0.06).save(
