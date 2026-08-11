@@ -62,9 +62,12 @@ MARGE_TUILE = 0.05
 #       82 %             1,14 %                   0,00 %
 #       90 %             3,38 %                   0,07 %
 #
-# A 82 % on ne perd donc rien sur un squircle, et seulement l'extreme pointe
-# des volutes sur un cercle parfait. Le compromis est nettement favorable.
-MARGE_MASQUABLE = 0.09
+# Marge alignee sur celle de la tuile ordinaire, a sa demande expresse : il veut
+# la meme taille de marque sur les deux appareils, et l'ecart de huit points se
+# voyait. Sur un squircle, la forme qu'emploient la plupart des lanceurs, on n'y
+# perd toujours rien. Sur un lanceur au masque parfaitement circulaire, l'extreme
+# pointe des volutes est rognee. C'est un choix assume, pas un oubli.
+MARGE_MASQUABLE = MARGE_TUILE
 
 
 # --------------------------------------------------------------------------
