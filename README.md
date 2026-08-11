@@ -10,7 +10,7 @@ déjà rempli, et les pages sont reliées entre elles par un graphe JSON-LD dont
 les identifiants ne bougent jamais, pour que les moteurs comprennent qu'il
 s'agit d'une seule personne et de ses travaux.
 
-Astro 5, TypeScript strict, Tailwind 4, contenu en Markdown validé par Zod,
+Astro 7, TypeScript strict, Tailwind 4, contenu en Markdown validé par Zod,
 hébergé sur Cloudflare Pages.
 
 Le site envoie 7,6 Ko de JavaScript, 11,9 Ko de CSS et 65 Ko de polices, une

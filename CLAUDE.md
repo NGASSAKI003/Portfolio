@@ -1,6 +1,6 @@
 # Portfolio NGASSAKI-NDZA
 
-Site personnel, en production. Astro 5, TypeScript strict, Tailwind 4, contenu
+Site personnel, en production. Astro 7, TypeScript strict, Tailwind 4, contenu
 en Markdown validé par Zod, déployé sur Cloudflare Pages.
 
 Le [README.md](README.md) explique l'architecture et les décisions. Ce fichier ci
@@ -92,9 +92,9 @@ le recréer, et le nom du projet détermine l'adresse.
 
 ## Valeurs à remplir
 
-Dans `site.config.mjs` : `VERIFICATION_GOOGLE` reste vide, en attente de la
-vérification Google Search Console. `SITE_URL` devra être corrigé si l'adresse
-de déploiement diffère de celle qui y figure.
+Dans `site.config.mjs` : `VERIFICATION_GOOGLE` et `SITE_URL` sont renseignés,
+la propriété est validée dans Search Console et le sitemap soumis. `SITE_URL`
+devra être corrigé le jour où l'adresse de déploiement changera.
 
 Les guides `A-FAIRE.md` et `LINKEDIN.md` existent sur le disque mais sont hors
 du dépôt : ce sont des marches à suivre personnelles, sans rapport avec le code.

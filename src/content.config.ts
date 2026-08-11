@@ -1,4 +1,7 @@
-import { defineCollection, z } from 'astro:content';
+import { defineCollection } from 'astro:content';
+// Astro 7 ne reexporte plus `z` depuis `astro:content` : la validation des
+// schemas vient desormais directement de la copie de zod qu'Astro embarque.
+import { z } from 'astro/zod';
 import { glob } from 'astro/loaders';
 
 /**
